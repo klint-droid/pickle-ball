@@ -6,6 +6,8 @@ export type CourtSide = 'even' | 'odd'; // Even = right service box, Odd = left 
 
 export type ScoringMode = 'side-out' | 'rally';
 
+export type DifficultyLevel = 'easy' | 'medium' | 'hard';
+
 export interface Player {
   id: PlayerId;
   name: string;
@@ -33,6 +35,13 @@ export interface BallTrailPoint {
   radius: number;
 }
 
+export interface BallLandingPrediction {
+  x: number;
+  y: number;
+  framesRemaining: number;
+  totalFlightFrames: number;
+}
+
 export interface Ball {
   x: number;
   y: number;
@@ -50,6 +59,7 @@ export interface Ball {
   isServe: boolean;
   shotCountInRally: number; // 0: serve, 1: return, 2: 3rd shot, 3+: open rally
   targetServiceBox?: { minX: number; maxX: number; minY: number; maxY: number } | null;
+  predictedLanding?: BallLandingPrediction | null;
   trail: BallTrailPoint[];
   isActive: boolean;
 }
@@ -95,6 +105,7 @@ export interface GameScore {
   server: PlayerId;
   serverCourt: CourtSide;
   scoringMode: ScoringMode;
+  difficulty: DifficultyLevel;
   isSideOut: boolean;
   pointWinner: PlayerId | null;
   pointReason: string;

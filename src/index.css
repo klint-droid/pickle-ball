@@ -255,6 +255,39 @@ html, body {
   transform: scale(1.04);
 }
 
+.difficulty-chip {
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  padding: 2px 7px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.difficulty-chip.diff-easy {
+  background: rgba(74, 222, 128, 0.15);
+  border: 1px solid rgba(74, 222, 128, 0.4);
+  color: #4ade80;
+}
+
+.difficulty-chip.diff-medium {
+  background: rgba(56, 189, 248, 0.15);
+  border: 1px solid rgba(56, 189, 248, 0.4);
+  color: #38bdf8;
+}
+
+.difficulty-chip.diff-hard {
+  background: rgba(248, 113, 113, 0.15);
+  border: 1px solid rgba(248, 113, 113, 0.4);
+  color: #f87171;
+}
+
+.difficulty-chip:hover {
+  transform: scale(1.05);
+  filter: brightness(1.15);
+}
+
 .rally-box {
   display: flex;
   align-items: baseline;
@@ -549,6 +582,88 @@ html, body {
   color: var(--text-main);
 }
 
+/* Difficulty Selector */
+.difficulty-mode-selector,
+.pause-difficulty-box {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.selector-label-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.difficulty-hint {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--pickle-yellow);
+  text-align: right;
+}
+
+.difficulty-toggle-group {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 6px;
+}
+
+.diff-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  padding: 7px 6px;
+  border-radius: 9px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.35);
+  color: var(--text-muted);
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.diff-btn .diff-name {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+}
+
+.diff-btn .diff-sub {
+  font-size: 9px;
+  font-weight: 600;
+  opacity: 0.75;
+}
+
+.diff-btn.diff-easy:hover,
+.diff-btn.diff-easy.active {
+  border-color: #4ade80;
+  background: rgba(74, 222, 128, 0.16);
+  color: #4ade80;
+  box-shadow: 0 0 12px rgba(74, 222, 128, 0.2);
+}
+
+.diff-btn.diff-medium:hover,
+.diff-btn.diff-medium.active {
+  border-color: #38bdf8;
+  background: rgba(56, 189, 248, 0.16);
+  color: #38bdf8;
+  box-shadow: 0 0 12px rgba(56, 189, 248, 0.2);
+}
+
+.diff-btn.diff-hard:hover,
+.diff-btn.diff-hard.active {
+  border-color: #f87171;
+  background: rgba(248, 113, 113, 0.16);
+  color: #f87171;
+  box-shadow: 0 0 12px rgba(248, 113, 113, 0.2);
+}
+
 .menu-actions,
 .pause-actions,
 .game-over-actions {
@@ -810,6 +925,66 @@ kbd.key {
 
 kbd.key-wide {
   min-width: 80px;
+}
+
+/* Visual Hit-Assist Guide */
+.hit-assist-guide-card {
+  background: rgba(56, 189, 248, 0.06);
+  border: 1px solid rgba(56, 189, 248, 0.22);
+  border-radius: 12px;
+  padding: 12px 16px;
+  margin-bottom: 12px;
+  text-align: left;
+}
+
+.hit-assist-icon {
+  font-size: 15px;
+}
+
+.hit-guide-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-top: 6px;
+}
+
+@media (max-width: 600px) {
+  .hit-guide-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.hit-guide-item {
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  padding: 8px 10px;
+}
+
+.hit-guide-item p {
+  font-size: 11px;
+  line-height: 1.35;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+
+.hit-visual-tag {
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  display: inline-block;
+}
+
+.tag-green {
+  color: #4ade80;
+}
+
+.tag-red {
+  color: #ef4444;
+}
+
+.tag-blue {
+  color: #38bdf8;
 }
 
 /* Pickleball Rules Card */

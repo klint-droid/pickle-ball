@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import type { ScoringMode } from '../types/game';
+import type { ScoringMode, DifficultyLevel } from '../types/game';
 import { Play, HelpCircle, Check, MousePointer, Download, Maximize2 } from 'lucide-react';
 
 interface BeforeInstallPromptEvent extends Event {
@@ -10,6 +10,8 @@ interface BeforeInstallPromptEvent extends Event {
 interface MainMenuProps {
   scoringMode: ScoringMode;
   onSetScoringMode: (mode: ScoringMode) => void;
+  difficulty: DifficultyLevel;
+  onSetDifficulty: (mode: DifficultyLevel) => void;
   onStartGame: () => void;
   onOpenControls: () => void;
 }
@@ -17,6 +19,8 @@ interface MainMenuProps {
 export const MainMenu: React.FC<MainMenuProps> = ({
   scoringMode,
   onSetScoringMode,
+  difficulty,
+  onSetDifficulty,
   onStartGame,
   onOpenControls
 }) => {
@@ -76,15 +80,53 @@ export const MainMenu: React.FC<MainMenuProps> = ({
             <span className="dot d3"></span>
             <span className="dot d4"></span>
           </div>
-          <span className="badge-text">MOUSE HOVER & MOBILE TOUCH</span>
+          <span className="badge-text">VISUAL HIT-ASSIST & LANDING RETICLE ACTIVE</span>
         </div>
 
         <h1 className="menu-title">
           PICKLE<span className="title-highlight">BALL</span>
         </h1>
         <p className="menu-subtitle">
-          Glide your mouse or touch screen to move your paddle. Official Non-Volley Zone (Kitchen) rules, Two-Bounce physics, and pre-serve countdown.
+          Glide your mouse or touch screen to move your paddle. Follow the court floor landing reticle and paddle sweet-spot halo to hit cleanly!
         </p>
+
+        {/* Difficulty Level Selection Tabs */}
+        <div className="difficulty-mode-selector">
+          <div className="selector-label-row">
+            <span className="selector-label">Difficulty Level:</span>
+            <span className="difficulty-hint">
+              {difficulty === 'easy' && '⚡ 0.8x ball speed, forgiving hit reach & gentle AI'}
+              {difficulty === 'medium' && '⚡ 1.0x regulation speed & balanced AI'}
+              {difficulty === 'hard' && '⚡ 1.2x tournament speed & aggressive AI'}
+            </span>
+          </div>
+          <div className="difficulty-toggle-group">
+            <button
+              className={`diff-btn diff-easy ${difficulty === 'easy' ? 'active' : ''}`}
+              onClick={() => onSetDifficulty('easy')}
+              type="button"
+            >
+              <span className="diff-name">EASY</span>
+              <span className="diff-sub">Soft & Forgiving</span>
+            </button>
+            <button
+              className={`diff-btn diff-medium ${difficulty === 'medium' ? 'active' : ''}`}
+              onClick={() => onSetDifficulty('medium')}
+              type="button"
+            >
+              <span className="diff-name">MEDIUM</span>
+              <span className="diff-sub">Regulation</span>
+            </button>
+            <button
+              className={`diff-btn diff-hard ${difficulty === 'hard' ? 'active' : ''}`}
+              onClick={() => onSetDifficulty('hard')}
+              type="button"
+            >
+              <span className="diff-name">HARD</span>
+              <span className="diff-sub">Fast & Fierce</span>
+            </button>
+          </div>
+        </div>
 
         {/* Scoring Mode Selection Tabs */}
         <div className="scoring-mode-selector">

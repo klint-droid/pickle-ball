@@ -1,4 +1,4 @@
-import type { GameState, GameScore, PlayerId, CourtSide, ScoringMode } from '../types/game';
+import type { GameState, GameScore, PlayerId, CourtSide, ScoringMode, DifficultyLevel } from '../types/game';
 import { Court } from './Court';
 import { PlayerCharacter } from './Player';
 import { BallEntity } from './Ball';
@@ -22,6 +22,7 @@ export class GameEngine {
     server: 'player1',
     serverCourt: 'even',
     scoringMode: 'side-out',
+    difficulty: 'medium',
     isSideOut: false,
     pointWinner: null,
     pointReason: '',
@@ -33,7 +34,8 @@ export class GameEngine {
   private serveCountdownFrames: number = 0;
   private currentCountdownSecond: number | null = null;
   private onStateChange: ((state: GameState, score: GameScore) => void) | null = null;
-  private hitReach: number = 48;
+  private hitReach: number = 50;
+  private p1HitStatus: 'ready' | 'approaching' | 'warn-bounce' | 'idle' = 'idle';
 
   constructor(canvasWidth: number = 1280, canvasHeight: number = 720) {
     this.court = new Court(canvasWidth, canvasHeight);
@@ -46,6 +48,24 @@ export class GameEngine {
     this.input.setOnEscape(() => {
       this.togglePause();
     });
+  }
+
+  public setDifficulty(diff: DifficultyLevel) {
+    this.score.difficulty = diff;
+    if (diff === 'easy') {
+      this.hitReach = 62;
+    } else if (diff === 'medium') {
+      this.hitReach = 50;
+    } else {
+      this.hitReach = 42;
+    }
+    this.notify();
+  }
+
+  public getSpeedMultiplier(): number {
+    if (this.score.difficulty === 'easy') return 0.82;
+    if (this.score.difficulty === 'hard') return 1.22;
+    return 1.0;
   }
 
   public setListener(cb: (state: GameState, score: GameScore) => void) {
@@ -88,6 +108,7 @@ export class GameEngine {
   }
 
   private startServeCountdown() {
+    this.p1HitStatus = 'idle';
     this.particles.clear();
     const courtSide = this.computeServerCourt();
     this.score.serverCourt = courtSide;
@@ -125,7 +146,7 @@ export class GameEngine {
     this.score.serveCountdown = null;
     this.currentCountdownSecond = null;
     sound.playServeWhistle();
-    this.ball.resetToServe(this.score.server, this.score.serverCourt, this.court.dims);
+    this.ball.resetToServe(this.score.server, this.score.serverCourt, this.court.dims, this.getSpeedMultiplier());
     this.notify();
   }
 
@@ -223,9 +244,27 @@ export class GameEngine {
     // 1. Update Player 1 with Mouse Hover Movement
     this.player1.updateWithMouse(this.input.mouseX, this.input.mouseY, p1Input.justHit, this.ball.x, this.ball.y);
 
-    // Auto-hit if mouse paddle collides directly with ball, or on click/space
+    // Calculate Hit-Assist Status for Player 1
     const p1Paddle = this.player1.getPaddleHitCenter();
     const p1Dist = Math.hypot(this.ball.x - p1Paddle.x, this.ball.y - p1Paddle.y);
+    const isVolley = !this.ball.hasBouncedSinceHit;
+    const isIllegalVolley = isVolley && (
+      this.ball.shotCountInRally === 0 ||
+      this.ball.shotCountInRally === 1 ||
+      this.player1.isInKitchen(this.court.dims)
+    );
+
+    if (!this.ball.isActive || (this.ball.vx > 0.5 && this.ball.x > this.court.dims.courtRight - 80)) {
+      this.p1HitStatus = 'idle';
+    } else if (p1Dist <= this.hitReach && this.ball.z < 75) {
+      this.p1HitStatus = isIllegalVolley ? 'warn-bounce' : 'ready';
+    } else if (p1Dist <= this.hitReach * 1.85 && (this.ball.vx < 0 || this.ball.x < this.court.dims.netX)) {
+      this.p1HitStatus = isIllegalVolley ? 'warn-bounce' : 'approaching';
+    } else {
+      this.p1HitStatus = 'idle';
+    }
+
+    // Auto-hit if mouse paddle collides directly with ball, or on click/space
     const isP1HoverContact = p1Dist <= 32 && this.ball.z < 65 && this.ball.currentSide === 'left';
     const p1ShouldHit = p1Input.justHit || isP1HoverContact;
     this.checkPlayerHit('player1', this.player1, p1ShouldHit);
@@ -243,7 +282,8 @@ export class GameEngine {
         this.ball.vx,
         this.ball.hasBouncedSinceHit,
         this.ball.shotCountInRally,
-        this.court.dims
+        this.court.dims,
+        this.score.difficulty
       );
       if (aiSwung) {
         this.checkPlayerHit('player2', this.player2, true);
@@ -301,7 +341,8 @@ export class GameEngine {
         player.velocityY,
         isSmash,
         this.particles,
-        this.court.dims
+        this.court.dims,
+        this.getSpeedMultiplier()
       );
 
       this.score.rally++;
@@ -359,6 +400,7 @@ export class GameEngine {
     this.score.pointWinner = null;
     this.score.pointReason = '';
     this.score.isSideOut = false;
+    this.p1HitStatus = 'idle';
 
     this.startServeCountdown();
   }
@@ -382,7 +424,10 @@ export class GameEngine {
       ctx.restore();
     }
 
-    // 2. Players (Top-Down)
+    // 2. Hit Indicator & Players (Top-Down)
+    if (this.state === 'playing') {
+      this.player1.renderHitIndicator(ctx, this.p1HitStatus, this.hitReach);
+    }
     this.player1.render(ctx);
     this.player2.render(ctx);
 

@@ -1,18 +1,59 @@
 import React from 'react';
+import type { DifficultyLevel } from '../types/game';
 import { Play, RotateCcw, Home } from 'lucide-react';
 
 interface PauseMenuProps {
+  difficulty?: DifficultyLevel;
+  onSetDifficulty?: (difficulty: DifficultyLevel) => void;
   onResume: () => void;
   onRestart: () => void;
   onMainMenu: () => void;
 }
 
-export const PauseMenu: React.FC<PauseMenuProps> = ({ onResume, onRestart, onMainMenu }) => {
+export const PauseMenu: React.FC<PauseMenuProps> = ({
+  difficulty,
+  onSetDifficulty,
+  onResume,
+  onRestart,
+  onMainMenu
+}) => {
   return (
     <div className="pause-overlay">
       <div className="pause-modal">
         <h2 className="pause-title">MATCH PAUSED</h2>
-        <p className="pause-subtitle">Take a breather or restart the game</p>
+        <p className="pause-subtitle">Take a breather, adjust difficulty, or restart the match</p>
+
+        {onSetDifficulty && difficulty && (
+          <div className="pause-difficulty-box">
+            <span className="selector-label">Difficulty:</span>
+            <div className="difficulty-toggle-group">
+              <button
+                className={`diff-btn diff-easy ${difficulty === 'easy' ? 'active' : ''}`}
+                onClick={() => onSetDifficulty('easy')}
+                type="button"
+              >
+                <span className="diff-name">EASY</span>
+                <span className="diff-sub">0.8x Speed</span>
+              </button>
+              <button
+                className={`diff-btn diff-medium ${difficulty === 'medium' ? 'active' : ''}`}
+                onClick={() => onSetDifficulty('medium')}
+                type="button"
+              >
+                <span className="diff-name">MEDIUM</span>
+                <span className="diff-sub">1.0x Speed</span>
+              </button>
+              <button
+                className={`diff-btn diff-hard ${difficulty === 'hard' ? 'active' : ''}`}
+                onClick={() => onSetDifficulty('hard')}
+                type="button"
+              >
+                <span className="diff-name">HARD</span>
+                <span className="diff-sub">1.2x Speed</span>
+              </button>
+            </div>
+          </div>
+        )}
 
         <div className="pause-actions">
           <button className="btn-primary" onClick={onResume}>

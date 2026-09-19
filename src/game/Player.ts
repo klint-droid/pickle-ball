@@ -1,4 +1,4 @@
-import type { Player, PlayerId, CourtDimensions } from '../types/game';
+import type { Player, PlayerId, CourtDimensions, DifficultyLevel } from '../types/game';
 import type { PlayerInput } from './Input';
 
 export class PlayerCharacter implements Player {
@@ -29,8 +29,8 @@ export class PlayerCharacter implements Player {
 
     if (id === 'player1') {
       this.name = 'Player 1';
-      this.angle = 0; // Facing right towards net
-      this.bodyColor = '#38bdf8'; // Sky blue
+      this.angle = 0;
+      this.bodyColor = '#38bdf8';
       this.shirtColor = '#0284c7';
       this.paddleColor = '#0ea5e9';
 
@@ -40,8 +40,8 @@ export class PlayerCharacter implements Player {
       this.y = court.centerlineY + 80;
     } else {
       this.name = 'Player 2';
-      this.angle = Math.PI; // Facing left towards net
-      this.bodyColor = '#fb923c'; // Coral / Amber
+      this.angle = Math.PI;
+      this.bodyColor = '#fb923c';
       this.shirtColor = '#ea580c';
       this.paddleColor = '#f97316';
 
@@ -95,30 +95,23 @@ export class PlayerCharacter implements Player {
     );
   }
 
-  // Update position following mouse hover directly
   public updateWithMouse(mouseX: number, mouseY: number, justHit: boolean, ballX: number, ballY: number) {
     const prevX = this.x;
     const prevY = this.y;
 
-    // Smooth yet ultra-responsive mouse tracking (e.g. air hockey / paddle cursor feel)
     const targetX = Math.max(this.minX, Math.min(this.maxX, mouseX));
     const targetY = Math.max(this.minY, Math.min(this.maxY, mouseY));
 
-    // Smooth interpolation with high coefficient for crisp tracking
-    this.x += (targetX - this.x) * 0.55;
-    this.y += (targetY - this.y) * 0.55;
+    this.x += (targetX - this.x) * 0.58;
+    this.y += (targetY - this.y) * 0.58;
 
     this.velocityX = this.x - prevX;
     this.velocityY = this.y - prevY;
 
-    // Face towards the ball
     this.faceTowards(ballX, ballY);
-
-    // Hit / Swing execution
     this.handleHit(justHit);
   }
 
-  // Update with 2D Keyboard input (WASD or Arrows)
   public updateWithKeyboard(input: PlayerInput, ballX: number, ballY: number) {
     let dx = 0;
     let dy = 0;
@@ -149,7 +142,7 @@ export class PlayerCharacter implements Player {
     this.handleHit(input.justHit);
   }
 
-  // Smart AI Opponent for Player 2
+  // Smart AI Opponent with Difficulty Tuning
   public updateAI(
     ballX: number,
     ballY: number,
@@ -157,7 +150,8 @@ export class PlayerCharacter implements Player {
     ballVx: number,
     ballHasBounced: boolean,
     shotCount: number,
-    court: CourtDimensions
+    court: CourtDimensions,
+    difficulty: DifficultyLevel = 'medium'
   ): boolean {
     let shouldHit = false;
     let targetX = this.x;
@@ -166,38 +160,37 @@ export class PlayerCharacter implements Player {
     const isBallApproaching = ballVx > 0;
     const centerY = court.centerlineY;
 
+    // Difficulty-tuned AI speed and reach
+    const aiSpeed = difficulty === 'easy' ? 3.8 : difficulty === 'medium' ? 4.9 : 6.2;
+    const aiReach = difficulty === 'easy' ? 42 : difficulty === 'medium' ? 46 : 52;
+
     if (isBallApproaching) {
-      // Predict intercept point
       targetY = ballY;
 
-      // TWO-BOUNCE RULE AWARENESS:
-      // If serve return (shot 0) or 3rd shot (shot 1), AI MUST wait for bounce before volleying
+      // Occasional slight error on Easy
+      if (difficulty === 'easy' && Math.random() < 0.08) {
+        targetY += (Math.random() - 0.5) * 35;
+      }
+
       const mustWaitForBounce = (shotCount === 0 || shotCount === 1) && !ballHasBounced;
 
       if (mustWaitForBounce) {
-        // Stay back near baseline waiting for bounce
         targetX = court.courtRight - 60;
       } else {
-        // KITCHEN RULE AWARENESS:
-        // Do not advance into kitchen unless ball already bounced inside kitchen
         const ballBouncedInKitchen = ballHasBounced && ballX >= court.kitchenRight;
         if (!ballBouncedInKitchen) {
-          // Stay just behind kitchen line (safe volley position)
           const safeLine = court.kitchenRight + 24;
           targetX = Math.max(safeLine, Math.min(court.courtRight - 30, ballX));
         } else {
-          // Step forward to dink
           targetX = ballX;
         }
       }
 
-      // Check if ball is in paddle hit reach
       const paddlePos = this.getPaddleHitCenter();
       const dist = Math.hypot(ballX - paddlePos.x, ballY - paddlePos.y);
 
-      if (dist < 46 && ballZ < 70) {
+      if (dist < aiReach && ballZ < 72) {
         if (!mustWaitForBounce) {
-          // If in kitchen, only hit if ball has already bounced
           if (!this.isInKitchen(court) || ballHasBounced) {
             shouldHit = true;
           }
@@ -206,13 +199,10 @@ export class PlayerCharacter implements Player {
         }
       }
     } else {
-      // Ball is moving away: reset to optimal ready position
       targetX = court.courtRight - 80;
       targetY = centerY;
     }
 
-    // Move AI smoothly toward target position
-    const aiSpeed = 4.8;
     const dx = targetX - this.x;
     const dy = targetY - this.y;
     const dist = Math.hypot(dx, dy);
@@ -227,7 +217,6 @@ export class PlayerCharacter implements Player {
       this.velocityY = 0;
     }
 
-    // Clamp
     if (this.x < this.minX) this.x = this.minX;
     if (this.x > this.maxX) this.x = this.maxX;
     if (this.y < this.minY) this.y = this.minY;
@@ -279,22 +268,21 @@ export class PlayerCharacter implements Player {
     ctx.save();
     ctx.translate(this.x, this.y);
 
-    // 1. Soft drop shadow on the court
+    // Drop shadow
     ctx.fillStyle = 'rgba(0, 0, 0, 0.35)';
     ctx.beginPath();
     ctx.ellipse(0, 3, 20, 15, 0, 0, Math.PI * 2);
     ctx.fill();
 
-    // Rotate player model towards aim angle
     ctx.rotate(this.angle);
 
-    // 2. Athletic Shoulders & Torso (Top-Down)
+    // Torso
     ctx.fillStyle = this.shirtColor;
     ctx.beginPath();
     ctx.ellipse(0, 0, 16, 12, 0, 0, Math.PI * 2);
     ctx.fill();
 
-    // 3. Sport Jersey Number on back
+    // Jersey Number
     ctx.save();
     ctx.rotate(-Math.PI / 2);
     ctx.font = 'bold 9px system-ui, sans-serif';
@@ -304,14 +292,13 @@ export class PlayerCharacter implements Player {
     ctx.fillText(this.id === 'player1' ? '1' : '2', 0, 4);
     ctx.restore();
 
-    // 4. Head & Sport Cap (Top-Down)
+    // Head & Cap
     const headRadius = 9;
-    ctx.fillStyle = '#fed7aa'; // Skin tone
+    ctx.fillStyle = '#fed7aa';
     ctx.beginPath();
     ctx.arc(0, 0, headRadius, 0, Math.PI * 2);
     ctx.fill();
 
-    // Cap / Headband
     ctx.fillStyle = this.bodyColor;
     ctx.beginPath();
     ctx.arc(0, 0, headRadius + 0.5, -Math.PI / 2, Math.PI / 2);
@@ -320,7 +307,6 @@ export class PlayerCharacter implements Player {
     ctx.ellipse(headRadius + 2, 0, 3.5, 6, 0, 0, Math.PI * 2);
     ctx.fill();
 
-    // 5. Arm & Pickleball Paddle
     this.renderPaddle(ctx);
 
     ctx.restore();
@@ -331,7 +317,6 @@ export class PlayerCharacter implements Player {
     ctx.translate(6, 8);
     ctx.rotate(this.paddleAngle);
 
-    // Arm
     ctx.strokeStyle = '#fed7aa';
     ctx.lineWidth = 5;
     ctx.lineCap = 'round';
@@ -340,7 +325,6 @@ export class PlayerCharacter implements Player {
     ctx.lineTo(14, 0);
     ctx.stroke();
 
-    // Paddle Handle
     ctx.strokeStyle = '#334155';
     ctx.lineWidth = 4;
     ctx.beginPath();
@@ -348,7 +332,6 @@ export class PlayerCharacter implements Player {
     ctx.lineTo(21, 0);
     ctx.stroke();
 
-    // Paddle Blade
     ctx.translate(21, 0);
     ctx.fillStyle = this.paddleColor;
     ctx.strokeStyle = '#ffffff';
@@ -358,12 +341,67 @@ export class PlayerCharacter implements Player {
     ctx.fill();
     ctx.stroke();
 
-    // Swing Blur / Hit Reach Ring indicator during active hit
     if (this.isHitting) {
       ctx.strokeStyle = 'rgba(250, 204, 21, 0.5)';
       ctx.lineWidth = 2;
       ctx.beginPath();
       ctx.arc(8, 0, 28, -0.6, 0.6);
+      ctx.stroke();
+    }
+
+    ctx.restore();
+  }
+
+  // Hit-Assist Indicator Halo around Player 1 paddle
+  public renderHitIndicator(
+    ctx: CanvasRenderingContext2D,
+    status: 'ready' | 'approaching' | 'warn-bounce' | 'idle',
+    reachRadius: number
+  ) {
+    if (status === 'idle') return;
+
+    const paddlePos = this.getPaddleHitCenter();
+    ctx.save();
+
+    if (status === 'ready') {
+      // 🟢 Ready to hit: Vibrant neon green pulse with HIT prompt
+      ctx.strokeStyle = '#4ade80';
+      ctx.lineWidth = 2.5;
+      ctx.shadowColor = '#22c55e';
+      ctx.shadowBlur = 16;
+      ctx.beginPath();
+      ctx.arc(paddlePos.x, paddlePos.y, reachRadius, 0, Math.PI * 2);
+      ctx.stroke();
+
+      ctx.fillStyle = 'rgba(74, 222, 128, 0.15)';
+      ctx.fill();
+
+      // "HIT!" badge above paddle
+      ctx.shadowBlur = 0;
+      ctx.font = '800 12px Outfit, system-ui, sans-serif';
+      ctx.fillStyle = '#4ade80';
+      ctx.textAlign = 'center';
+      ctx.fillText('HIT NOW!', paddlePos.x, paddlePos.y - reachRadius - 8);
+    } else if (status === 'warn-bounce') {
+      // 🔴 Illegal volley warning (Kitchen or Two-Bounce): Red warning
+      ctx.strokeStyle = '#ef4444';
+      ctx.lineWidth = 2;
+      ctx.setLineDash([4, 3]);
+      ctx.beginPath();
+      ctx.arc(paddlePos.x, paddlePos.y, reachRadius, 0, Math.PI * 2);
+      ctx.stroke();
+
+      ctx.font = '800 11px Outfit, system-ui, sans-serif';
+      ctx.fillStyle = '#ef4444';
+      ctx.textAlign = 'center';
+      ctx.fillText('WAIT FOR BOUNCE!', paddlePos.x, paddlePos.y - reachRadius - 8);
+    } else if (status === 'approaching') {
+      // 🟡 Ball approaching: Gentle cyan range guide
+      ctx.strokeStyle = 'rgba(56, 189, 248, 0.55)';
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([2, 3]);
+      ctx.beginPath();
+      ctx.arc(paddlePos.x, paddlePos.y, reachRadius, 0, Math.PI * 2);
       ctx.stroke();
     }
 

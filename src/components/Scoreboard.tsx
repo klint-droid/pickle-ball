@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import type { GameScore, GameState, ScoringMode } from '../types/game';
+import type { GameScore, GameState, ScoringMode, DifficultyLevel } from '../types/game';
 import { sound } from '../game/Audio';
 import { Volume2, VolumeX, Pause, Play, ShieldAlert, Sparkles, Maximize2, Timer } from 'lucide-react';
 
@@ -8,13 +8,15 @@ interface ScoreboardProps {
   gameState: GameState;
   onPauseToggle: () => void;
   onToggleScoringMode?: (mode: ScoringMode) => void;
+  onSetDifficulty?: (diff: DifficultyLevel) => void;
 }
 
 export const Scoreboard: React.FC<ScoreboardProps> = ({
   score,
   gameState,
   onPauseToggle,
-  onToggleScoringMode
+  onToggleScoringMode,
+  onSetDifficulty
 }) => {
   const [isMuted, setIsMuted] = useState(sound.getIsMuted());
 
@@ -63,7 +65,7 @@ export const Scoreboard: React.FC<ScoreboardProps> = ({
         {/* Center Match Stats & Mode */}
         <div className="center-hud">
           <div className="match-title-row">
-            <span className="match-title">PICKLEBALL OFFICIAL</span>
+            <span className="match-title">PICKLEBALL</span>
             {onToggleScoringMode && (
               <button
                 className="mode-toggle-chip"
@@ -73,6 +75,20 @@ export const Scoreboard: React.FC<ScoreboardProps> = ({
                 title="Click to toggle Scoring Rule"
               >
                 {score.scoringMode === 'side-out' ? 'SIDE-OUT' : 'RALLY'}
+              </button>
+            )}
+            {onSetDifficulty && (
+              <button
+                className={`difficulty-chip diff-${score.difficulty || 'medium'}`}
+                onClick={() => {
+                  const current = score.difficulty || 'medium';
+                  const next: DifficultyLevel =
+                    current === 'easy' ? 'medium' : current === 'medium' ? 'hard' : 'easy';
+                  onSetDifficulty(next);
+                }}
+                title="Click to cycle Difficulty (Easy -> Medium -> Hard)"
+              >
+                {(score.difficulty || 'medium').toUpperCase()}
               </button>
             )}
           </div>

@@ -74,6 +74,28 @@ export const Controls: React.FC<ControlsProps> = ({ onClose }) => {
           </div>
         </div>
 
+        {/* Visual Hit-Assist & Trajectory UX Guide */}
+        <div className="hit-assist-guide-card">
+          <div className="rules-header">
+            <span className="hit-assist-icon">🎯</span>
+            <span>VISUAL HIT-ASSIST & TIMING SYSTEM</span>
+          </div>
+          <div className="hit-guide-grid">
+            <div className="hit-guide-item">
+              <div className="hit-visual-tag tag-green">🟢 HIT NOW!</div>
+              <p>Paddle ring glows neon green when the ball is within reach and legal to strike. Click, tap, or glide into it to return!</p>
+            </div>
+            <div className="hit-guide-item">
+              <div className="hit-visual-tag tag-red">🔴 WAIT FOR BOUNCE!</div>
+              <p>Appears if volleying would cause an illegal fault (inside the Kitchen or during the Two-Bounce rule). Let it bounce first!</p>
+            </div>
+            <div className="hit-guide-item">
+              <div className="hit-visual-tag tag-blue">◎ TIMING RING</div>
+              <p>Crosshair on the court floor shows exact landing spot. The outer ring shrinks inward as the ball descends so you never miss.</p>
+            </div>
+          </div>
+        </div>
+
         {/* Official Pickleball Rules Card */}
         <div className="pickleball-rules-card">
           <div className="rules-header">

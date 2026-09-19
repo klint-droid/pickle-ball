@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { GameEngine } from './game/GameEngine';
-import type { GameState, GameScore, ScoringMode } from './types/game';
+import type { GameState, GameScore, ScoringMode, DifficultyLevel } from './types/game';
 import { GameCanvas } from './components/GameCanvas';
 import { Scoreboard } from './components/Scoreboard';
 import { MainMenu } from './components/MainMenu';
@@ -16,17 +16,26 @@ export default function App() {
   const [score, setScore] = useState<GameScore>(engine.score);
   const [showControls, setShowControls] = useState<boolean>(false);
   const [scoringMode, setScoringMode] = useState<ScoringMode>('side-out');
+  const [difficulty, setDifficulty] = useState<DifficultyLevel>('medium');
 
   useEffect(() => {
     engine.setListener((state, newScore) => {
       setGameState(state);
       setScore(newScore);
+      if (newScore.difficulty) {
+        setDifficulty(newScore.difficulty);
+      }
     });
   }, [engine]);
 
   const handleSetScoringMode = (mode: ScoringMode) => {
     setScoringMode(mode);
     engine.setScoringMode(mode);
+  };
+
+  const handleSetDifficulty = (diff: DifficultyLevel) => {
+    setDifficulty(diff);
+    engine.setDifficulty(diff);
   };
 
   const handleStartGame = () => {
@@ -67,6 +76,7 @@ export default function App() {
             gameState={gameState}
             onPauseToggle={handlePauseToggle}
             onToggleScoringMode={handleSetScoringMode}
+            onSetDifficulty={handleSetDifficulty}
           />
         )}
 
@@ -75,6 +85,8 @@ export default function App() {
           <MainMenu
             scoringMode={scoringMode}
             onSetScoringMode={handleSetScoringMode}
+            difficulty={difficulty}
+            onSetDifficulty={handleSetDifficulty}
             onStartGame={handleStartGame}
             onOpenControls={() => setShowControls(true)}
           />
@@ -83,6 +95,8 @@ export default function App() {
         {/* Pause Screen */}
         {gameState === 'paused' && (
           <PauseMenu
+            difficulty={difficulty}
+            onSetDifficulty={handleSetDifficulty}
             onResume={handleResume}
             onRestart={handleRestart}
             onMainMenu={handleMainMenu}
