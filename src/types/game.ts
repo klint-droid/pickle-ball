@@ -98,5 +98,6 @@ export interface GameScore {
   isSideOut: boolean;
   pointWinner: PlayerId | null;
   pointReason: string;
+  serveCountdown: number | null;
   winner: PlayerId | null;
 }

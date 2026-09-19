@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import type { GameScore, GameState, ScoringMode } from '../types/game';
 import { sound } from '../game/Audio';
-import { Volume2, VolumeX, Pause, Play, ShieldAlert, Sparkles } from 'lucide-react';
+import { Volume2, VolumeX, Pause, Play, ShieldAlert, Sparkles, Maximize2, Timer } from 'lucide-react';
 
 interface ScoreboardProps {
   score: GameScore;
@@ -21,6 +21,21 @@ export const Scoreboard: React.FC<ScoreboardProps> = ({
   const toggleSound = () => {
     const muted = sound.toggleMute();
     setIsMuted(muted);
+  };
+
+  const handleToggleFullscreen = async () => {
+    try {
+      if (!document.fullscreenElement) {
+        await document.documentElement.requestFullscreen();
+        if ('orientation' in screen && 'lock' in screen.orientation) {
+          await (screen.orientation as unknown as { lock: (mode: string) => Promise<void> }).lock('landscape').catch(() => {});
+        }
+      } else {
+        await document.exitFullscreen();
+      }
+    } catch {
+      // Ignored if fullscreen permission denied
+    }
   };
 
   const courtSideLabel = score.serverCourt === 'even' ? 'RIGHT / EVEN' : 'LEFT / ODD';
@@ -87,6 +102,14 @@ export const Scoreboard: React.FC<ScoreboardProps> = ({
         <div className="hud-controls">
           <button
             className="hud-btn"
+            onClick={handleToggleFullscreen}
+            title="Toggle Fullscreen"
+            aria-label="Toggle Fullscreen"
+          >
+            <Maximize2 size={16} />
+          </button>
+          <button
+            className="hud-btn"
             onClick={toggleSound}
             title={isMuted ? 'Unmute Sound' : 'Mute Sound'}
             aria-label="Toggle Sound"
@@ -103,6 +126,19 @@ export const Scoreboard: React.FC<ScoreboardProps> = ({
           </button>
         </div>
       </div>
+
+      {/* Pre-Serve Countdown Notification Banner */}
+      {score.serveCountdown !== null && gameState === 'playing' && (
+        <div className="serve-countdown-banner">
+          <div className="countdown-hud-badge">
+            <Timer size={18} className="timer-icon pulse-fast" />
+            <span className="countdown-hud-text">
+              SERVE IN <strong className="countdown-digit">{score.serveCountdown}</strong>s
+            </span>
+            <span className="countdown-hint">TAP / CLICK TO SERVE NOW</span>
+          </div>
+        </div>
+      )}
 
       {/* Point / Fault Announcement Banner */}
       {gameState === 'point' && (

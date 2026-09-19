@@ -1,0 +1,30 @@
+{
+  "name": "Pickleball 2D - Arcade Tournament",
+  "short_name": "Pickleball 2D",
+  "description": "Full-court overhead pickleball tournament game with official rules, Two-Bounce physics, and Non-Volley Zone (Kitchen) mechanics.",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "landscape",
+  "background_color": "#090d16",
+  "theme_color": "#090d16",
+  "categories": ["games", "sports", "arcade"],
+  "icons": [
+    {
+      "src": "/pwa-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/pwa-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}

@@ -1,6 +1,11 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import type { ScoringMode } from '../types/game';
-import { Play, HelpCircle, Check, MousePointer } from 'lucide-react';
+import { Play, HelpCircle, Check, MousePointer, Download, Maximize2 } from 'lucide-react';
+
+interface BeforeInstallPromptEvent extends Event {
+  prompt: () => Promise<void>;
+  userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
+}
 
 interface MainMenuProps {
   scoringMode: ScoringMode;
@@ -15,6 +20,51 @@ export const MainMenu: React.FC<MainMenuProps> = ({
   onStartGame,
   onOpenControls
 }) => {
+  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
+  const [isInstalled, setIsInstalled] = useState<boolean>(false);
+
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (e: Event) => {
+      e.preventDefault();
+      setDeferredPrompt(e as BeforeInstallPromptEvent);
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+
+    if (window.matchMedia('(display-mode: standalone)').matches) {
+      setIsInstalled(true);
+    }
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    };
+  }, []);
+
+  const handleInstallClick = async () => {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    if (outcome === 'accepted') {
+      setIsInstalled(true);
+      setDeferredPrompt(null);
+    }
+  };
+
+  const handleToggleFullscreen = async () => {
+    try {
+      if (!document.fullscreenElement) {
+        await document.documentElement.requestFullscreen();
+        if ('orientation' in screen && 'lock' in screen.orientation) {
+          await (screen.orientation as unknown as { lock: (mode: string) => Promise<void> }).lock('landscape').catch(() => {});
+        }
+      } else {
+        await document.exitFullscreen();
+      }
+    } catch {
+      // Ignored if fullscreen permission denied
+    }
+  };
+
   return (
     <div className="menu-overlay">
       <div className="menu-modal">
@@ -26,14 +76,14 @@ export const MainMenu: React.FC<MainMenuProps> = ({
             <span className="dot d3"></span>
             <span className="dot d4"></span>
           </div>
-          <span className="badge-text">MOUSE HOVER CONTROLS</span>
+          <span className="badge-text">MOUSE HOVER & MOBILE TOUCH</span>
         </div>
 
         <h1 className="menu-title">
           PICKLE<span className="title-highlight">BALL</span>
         </h1>
         <p className="menu-subtitle">
-          Glide your mouse to move your paddle across the court. Official Non-Volley Zone (Kitchen) rules, Two-Bounce physics, and smart AI opponent.
+          Glide your mouse or touch screen to move your paddle. Official Non-Volley Zone (Kitchen) rules, Two-Bounce physics, and pre-serve countdown.
         </p>
 
         {/* Scoring Mode Selection Tabs */}
@@ -66,20 +116,39 @@ export const MainMenu: React.FC<MainMenuProps> = ({
             <span>PLAY MATCH</span>
           </button>
 
-          <button className="btn-secondary" onClick={onOpenControls}>
-            <HelpCircle size={18} />
-            <span>RULES & CONTROLS</span>
-          </button>
+          <div className="menu-secondary-row">
+            <button className="btn-secondary" onClick={onOpenControls}>
+              <HelpCircle size={18} />
+              <span>RULES & CONTROLS</span>
+            </button>
+
+            <button
+              className="btn-secondary btn-icon-only"
+              onClick={handleToggleFullscreen}
+              title="Toggle Fullscreen"
+              aria-label="Toggle Fullscreen"
+            >
+              <Maximize2 size={18} />
+            </button>
+          </div>
+
+          {/* Install PWA Prompt Button */}
+          {deferredPrompt && !isInstalled && (
+            <button className="btn-pwa-install" onClick={handleInstallClick}>
+              <Download size={18} />
+              <span>INSTALL APP (PWA)</span>
+            </button>
+          )}
         </div>
 
-        {/* Quick Keyboard Preview Footer */}
+        {/* Quick Controls Preview Footer */}
         <div className="quick-controls-footer">
           <div className="footer-p1">
             <span className="footer-label p1-text">
               <MousePointer size={11} style={{ display: 'inline', marginRight: 3 }} />
               PLAYER 1
             </span>
-            <code>MOUSE HOVER</code> + <code>CLICK</code>
+            <code>MOUSE / TOUCH</code> + <code>CLICK</code>
           </div>
           <div className="footer-divider"></div>
           <div className="footer-p2">

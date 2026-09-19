@@ -21,14 +21,17 @@ export class GameEngine {
     rally: 0,
     server: 'player1',
     serverCourt: 'even',
-    scoringMode: 'side-out', // Official pickleball default
+    scoringMode: 'side-out',
     isSideOut: false,
     pointWinner: null,
     pointReason: '',
+    serveCountdown: null,
     winner: null
   };
 
   private pointCooldownTimer: number = 0;
+  private serveCountdownFrames: number = 0;
+  private currentCountdownSecond: number | null = null;
   private onStateChange: ((state: GameState, score: GameScore) => void) | null = null;
   private hitReach: number = 48;
 
@@ -62,7 +65,6 @@ export class GameEngine {
 
   private computeServerCourt(): CourtSide {
     const serverScore = this.score.server === 'player1' ? this.score.player1 : this.score.player2;
-    // In pickleball: even score = Right/Even court, odd score = Left/Odd court
     return serverScore % 2 === 0 ? 'even' : 'odd';
   }
 
@@ -77,19 +79,53 @@ export class GameEngine {
       isSideOut: false,
       pointWinner: null,
       pointReason: '',
+      serveCountdown: null,
       winner: null
     };
 
+    this.input.start();
+    this.startServeCountdown();
+  }
+
+  private startServeCountdown() {
     this.particles.clear();
     const courtSide = this.computeServerCourt();
     this.score.serverCourt = courtSide;
 
-    this.player1.resetPosition(this.court.dims, true, courtSide);
-    this.player2.resetPosition(this.court.dims, false, courtSide);
-    this.ball.resetToServe('player1', courtSide, this.court.dims);
+    const isP1Server = this.score.server === 'player1';
+    this.player1.resetPosition(this.court.dims, isP1Server, courtSide);
+    this.player2.resetPosition(this.court.dims, !isP1Server, courtSide);
+
+    // Ball held stationary at server's hand during countdown
+    this.ball.isActive = true;
+    if (isP1Server) {
+      this.ball.x = this.player1.x + 18;
+      this.ball.y = this.player1.y;
+    } else {
+      this.ball.x = this.player2.x - 18;
+      this.ball.y = this.player2.y;
+    }
+    this.ball.z = 18;
+    this.ball.vx = 0;
+    this.ball.vy = 0;
+    this.ball.vz = 0;
+
+    // Start 3-second countdown (180 frames at 60fps)
+    this.serveCountdownFrames = 180;
+    this.currentCountdownSecond = 3;
+    this.score.serveCountdown = 3;
+    sound.playCountdownTick(3);
 
     this.state = 'playing';
-    this.input.start();
+    this.notify();
+  }
+
+  public executeServe() {
+    this.serveCountdownFrames = 0;
+    this.score.serveCountdown = null;
+    this.currentCountdownSecond = null;
+    sound.playServeWhistle();
+    this.ball.resetToServe(this.score.server, this.score.serverCourt, this.court.dims);
     this.notify();
   }
 
@@ -139,7 +175,48 @@ export class GameEngine {
       return;
     }
 
-    // Active Match Updates
+    // Pre-Serve Countdown State (3, 2, 1...)
+    if (this.serveCountdownFrames > 0) {
+      const p1Input = this.input.getPlayer1Input();
+      // Allow Player 1 to position paddle smoothly with mouse hover or touch
+      this.player1.updateWithMouse(this.input.mouseX, this.input.mouseY, p1Input.justHit, this.ball.x, this.ball.y);
+
+      // Keep ball in server's hand while countdown is active
+      const isP1Server = this.score.server === 'player1';
+      if (isP1Server) {
+        this.ball.x = this.player1.x + 18;
+        this.ball.y = this.player1.y;
+      } else {
+        this.ball.x = this.player2.x - 18;
+        this.ball.y = this.player2.y;
+      }
+
+      // Tap, click, or space during countdown launches serve immediately
+      if (p1Input.justHit || this.input.mouseJustClicked) {
+        this.executeServe();
+        this.input.endFrame();
+        return;
+      }
+
+      this.serveCountdownFrames--;
+      const sec = Math.ceil(this.serveCountdownFrames / 60);
+
+      if (sec !== this.currentCountdownSecond && sec > 0) {
+        this.currentCountdownSecond = sec;
+        this.score.serveCountdown = sec;
+        sound.playCountdownTick(sec);
+        this.notify();
+      }
+
+      if (this.serveCountdownFrames <= 0) {
+        this.executeServe();
+      }
+
+      this.input.endFrame();
+      return;
+    }
+
+    // Active Match In-Flight Updates
     const p1Input = this.input.getPlayer1Input();
     const p2Input = this.input.getPlayer2Input();
 
@@ -189,27 +266,21 @@ export class GameEngine {
   private checkPlayerHit(id: PlayerId, player: PlayerCharacter, justHit: boolean) {
     if (!justHit || !this.ball.isActive) return;
 
-    // Paddle sweet-spot distance on the court ground plane
     const hitCenter = player.getPaddleHitCenter();
     const dist2D = Math.hypot(this.ball.x - hitCenter.x, this.ball.y - hitCenter.y);
 
-    // Ball must be within paddle reach and below reach height (< 75px in 3D)
     if (dist2D <= this.hitReach && this.ball.z < 75) {
-      // RULE 1: TWO-BOUNCE RULE
-      // On Shot 0 (serve): receiver must let ball bounce before returning
-      // On Shot 1 (return of serve): server must let ball bounce before hitting
       const isVolley = !this.ball.hasBouncedSinceHit;
 
+      // RULE 1: TWO-BOUNCE RULE
       if (isVolley) {
         if (this.ball.shotCountInRally === 0) {
-          // Receiver attempted to volley the serve!
           const opponent: PlayerId = id === 'player1' ? 'player2' : 'player1';
           this.awardFault(opponent, 'Two-Bounce Fault: Receiver must let serve bounce!');
           return;
         }
 
         if (this.ball.shotCountInRally === 1) {
-          // Server attempted to volley the return of serve!
           const opponent: PlayerId = id === 'player1' ? 'player2' : 'player1';
           this.awardFault(opponent, 'Two-Bounce Fault: Server must let return bounce!');
           return;
@@ -217,15 +288,13 @@ export class GameEngine {
       }
 
       // RULE 2: NON-VOLLEY ZONE (KITCHEN) RULE
-      // Players cannot volley the ball (hit before bounce) while standing in or touching the Kitchen
       if (isVolley && player.isInKitchen(this.court.dims)) {
         const opponent: PlayerId = id === 'player1' ? 'player2' : 'player1';
         this.awardFault(opponent, 'Kitchen Fault: Volleyed inside Non-Volley Zone!');
         return;
       }
 
-      // Valid Hit Executed!
-      const isSmash = this.ball.z > 30; // Overhead smash if ball is high
+      const isSmash = this.ball.z > 30;
       this.ball.hit(
         id,
         player.velocityX,
@@ -246,14 +315,12 @@ export class GameEngine {
     this.score.pointWinner = rallyWinner;
     this.score.pointReason = reason;
     this.state = 'point';
-    this.pointCooldownTimer = 85; // ~1.4 seconds delay
+    this.pointCooldownTimer = 85;
 
     const isServerWinner = rallyWinner === this.score.server;
 
     if (this.score.scoringMode === 'side-out') {
-      // OFFICIAL PICKLEBALL SIDE-OUT SCORING
       if (isServerWinner) {
-        // Server won rally -> +1 point, retains serve
         if (rallyWinner === 'player1') {
           this.score.player1++;
         } else {
@@ -262,14 +329,12 @@ export class GameEngine {
         this.score.isSideOut = false;
         sound.playPointScored();
       } else {
-        // Receiver won rally -> SIDE OUT! No points, serve passes to receiver
         this.score.server = rallyWinner;
         this.score.isSideOut = true;
         this.score.pointReason += ' (SIDE OUT!)';
         sound.playNetHit();
       }
     } else {
-      // RALLY SCORING OPTION
       if (rallyWinner === 'player1') {
         this.score.player1++;
       } else {
@@ -279,7 +344,6 @@ export class GameEngine {
       sound.playPointScored();
     }
 
-    // Check Win Condition: First to 11 points (must win by 1 in MVP)
     if (this.score.player1 >= 11 || this.score.player2 >= 11) {
       this.score.winner = this.score.player1 >= 11 ? 'player1' : 'player2';
       this.state = 'gameOver';
@@ -296,24 +360,14 @@ export class GameEngine {
     this.score.pointReason = '';
     this.score.isSideOut = false;
 
-    // Determine court side (even/odd) for next serve
-    const courtSide = this.computeServerCourt();
-    this.score.serverCourt = courtSide;
-
-    const isP1Server = this.score.server === 'player1';
-    this.player1.resetPosition(this.court.dims, isP1Server, courtSide);
-    this.player2.resetPosition(this.court.dims, !isP1Server, courtSide);
-    this.ball.resetToServe(this.score.server, courtSide, this.court.dims);
-
-    this.state = 'playing';
-    this.notify();
+    this.startServeCountdown();
   }
 
   public render(ctx: CanvasRenderingContext2D) {
     // 1. Full Overhead Court & Net
     this.court.render(ctx);
 
-    // Subtle mouse cursor target on court
+    // Subtle mouse/touch cursor target on court
     if (this.input.isMouseActive && (this.state === 'playing' || this.state === 'point')) {
       ctx.save();
       ctx.strokeStyle = 'rgba(56, 189, 248, 0.45)';
@@ -337,5 +391,33 @@ export class GameEngine {
 
     // 4. Ground Particles & Confetti
     this.particles.render(ctx);
+
+    // 5. Pre-Serve Countdown Timer Overlay on Canvas
+    if (this.score.serveCountdown !== null && this.state === 'playing') {
+      ctx.save();
+      const count = this.score.serveCountdown;
+      const centerX = this.court.dims.width / 2;
+      const centerY = this.court.dims.height / 2;
+
+      // Glow behind number
+      ctx.font = '900 96px Outfit, system-ui, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.shadowColor = 'rgba(190, 242, 100, 0.85)';
+      ctx.shadowBlur = 35;
+      ctx.fillStyle = '#bef264';
+      ctx.fillText(count.toString(), centerX, centerY - 20);
+
+      ctx.shadowBlur = 0;
+      ctx.font = '700 16px Outfit, system-ui, sans-serif';
+      ctx.fillStyle = '#f8fafc';
+      const serverText = this.score.server === 'player1' ? 'PLAYER 1' : 'PLAYER 2';
+      ctx.fillText(`${serverText} SERVING...`, centerX, centerY + 45);
+
+      ctx.font = '600 12px Outfit, system-ui, sans-serif';
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.65)';
+      ctx.fillText('TAP OR CLICK TO SERVE NOW', centerX, centerY + 70);
+      ctx.restore();
+    }
   }
 }
