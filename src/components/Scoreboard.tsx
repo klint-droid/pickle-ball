@@ -1,0 +1,130 @@
+import React, { useState } from 'react';
+import type { GameScore, GameState, ScoringMode } from '../types/game';
+import { sound } from '../game/Audio';
+import { Volume2, VolumeX, Pause, Play, ShieldAlert, Sparkles } from 'lucide-react';
+
+interface ScoreboardProps {
+  score: GameScore;
+  gameState: GameState;
+  onPauseToggle: () => void;
+  onToggleScoringMode?: (mode: ScoringMode) => void;
+}
+
+export const Scoreboard: React.FC<ScoreboardProps> = ({
+  score,
+  gameState,
+  onPauseToggle,
+  onToggleScoringMode
+}) => {
+  const [isMuted, setIsMuted] = useState(sound.getIsMuted());
+
+  const toggleSound = () => {
+    const muted = sound.toggleMute();
+    setIsMuted(muted);
+  };
+
+  const courtSideLabel = score.serverCourt === 'even' ? 'RIGHT / EVEN' : 'LEFT / ODD';
+
+  return (
+    <div className="scoreboard-container">
+      {/* Top Glassmorphism HUD Bar */}
+      <div className="scoreboard-hud">
+        {/* Player 1 Info Card */}
+        <div className={`player-card p1 ${score.server === 'player1' ? 'serving' : ''}`}>
+          <div className="player-indicator">
+            <span className="p-dot p1-dot"></span>
+            <div className="player-meta">
+              <span className="player-title">PLAYER 1</span>
+              {score.server === 'player1' && (
+                <span className="serve-badge">
+                  SERVE ({courtSideLabel})
+                </span>
+              )}
+            </div>
+          </div>
+          <div className="score-num">{score.player1}</div>
+        </div>
+
+        {/* Center Match Stats & Mode */}
+        <div className="center-hud">
+          <div className="match-title-row">
+            <span className="match-title">PICKLEBALL OFFICIAL</span>
+            {onToggleScoringMode && (
+              <button
+                className="mode-toggle-chip"
+                onClick={() =>
+                  onToggleScoringMode(score.scoringMode === 'side-out' ? 'rally' : 'side-out')
+                }
+                title="Click to toggle Scoring Rule"
+              >
+                {score.scoringMode === 'side-out' ? 'SIDE-OUT' : 'RALLY'}
+              </button>
+            )}
+          </div>
+          <div className="rally-box">
+            <span className="rally-label">RALLY</span>
+            <span className="rally-value">{score.rally}</span>
+          </div>
+        </div>
+
+        {/* Player 2 Info Card */}
+        <div className={`player-card p2 ${score.server === 'player2' ? 'serving' : ''}`}>
+          <div className="score-num">{score.player2}</div>
+          <div className="player-indicator">
+            <div className="player-meta text-right">
+              <span className="player-title">PLAYER 2</span>
+              {score.server === 'player2' && (
+                <span className="serve-badge">
+                  SERVE ({courtSideLabel})
+                </span>
+              )}
+            </div>
+            <span className="p-dot p2-dot"></span>
+          </div>
+        </div>
+
+        {/* HUD Utilities */}
+        <div className="hud-controls">
+          <button
+            className="hud-btn"
+            onClick={toggleSound}
+            title={isMuted ? 'Unmute Sound' : 'Mute Sound'}
+            aria-label="Toggle Sound"
+          >
+            {isMuted ? <VolumeX size={17} /> : <Volume2 size={17} />}
+          </button>
+          <button
+            className="hud-btn"
+            onClick={onPauseToggle}
+            title={gameState === 'paused' ? 'Resume (ESC)' : 'Pause (ESC)'}
+            aria-label="Pause Game"
+          >
+            {gameState === 'paused' ? <Play size={17} /> : <Pause size={17} />}
+          </button>
+        </div>
+      </div>
+
+      {/* Point / Fault Announcement Banner */}
+      {gameState === 'point' && (
+        <div className="point-announcement">
+          <div className={`point-badge ${score.isSideOut ? 'side-out-badge' : ''}`}>
+            {score.isSideOut ? (
+              <div className="point-headline side-out-text">
+                <ShieldAlert size={20} />
+                <span>SIDE OUT! SERVE TRANSFERRED</span>
+              </div>
+            ) : (
+              <div className="point-headline">
+                <Sparkles size={18} className="sparkle-icon" />
+                <span className={score.pointWinner === 'player1' ? 'p1-text' : 'p2-text'}>
+                  {score.pointWinner === 'player1' ? 'PLAYER 1' : 'PLAYER 2'} SCORES!
+                </span>
+              </div>
+            )}
+            <span className="point-reason">{score.pointReason}</span>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
