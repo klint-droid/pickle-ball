@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, ArrowRight, MousePointer, Cpu, AlertTriangle } from 'lucide-react';
+import { X, ArrowRight } from 'lucide-react';
 
 interface ControlsProps {
   onClose: () => void;
@@ -21,8 +21,7 @@ export const Controls: React.FC<ControlsProps> = ({ onClose }) => {
           {/* Player 1 Card (Mouse Hover) */}
           <div className="control-player-box p1-box">
             <div className="box-title p1-text">
-              <MousePointer size={14} style={{ display: 'inline', marginRight: 4 }} />
-              PLAYER 1 (MOUSE HOVER)
+              PLAYER 1 (MOUSE / TOUCH)
             </div>
             <div className="key-layout">
               <div className="key-row">
@@ -44,13 +43,12 @@ export const Controls: React.FC<ControlsProps> = ({ onClose }) => {
           {/* Player 2 Card (Smart AI / Local 2P) */}
           <div className="control-player-box p2-box">
             <div className="box-title p2-text">
-              <Cpu size={14} style={{ display: 'inline', marginRight: 4 }} />
-              PLAYER 2 (SMART AI / LOCAL 2P)
+              PLAYER 2 (AI / LOCAL 2P)
             </div>
             <div className="key-layout">
               <div className="key-row">
                 <span className="key-desc" style={{ color: '#f8fafc', fontWeight: 600 }}>
-                  Controlled by Smart Pickleball AI by default!
+                  Controlled by AI opponent automatically
                 </span>
               </div>
               <div className="key-row">
@@ -77,21 +75,20 @@ export const Controls: React.FC<ControlsProps> = ({ onClose }) => {
         {/* Visual Hit-Assist & Trajectory UX Guide */}
         <div className="hit-assist-guide-card">
           <div className="rules-header">
-            <span className="hit-assist-icon">🎯</span>
-            <span>VISUAL HIT-ASSIST & TIMING SYSTEM</span>
+            <span>TRAJECTORY & HIT ASSISTANCE</span>
           </div>
           <div className="hit-guide-grid">
             <div className="hit-guide-item">
-              <div className="hit-visual-tag tag-green">🟢 HIT NOW!</div>
-              <p>Paddle ring glows neon green when the ball is within reach and legal to strike. Click, tap, or glide into it to return!</p>
+              <div className="hit-visual-tag tag-green">HIT WINDOW</div>
+              <p>Paddle ring highlights when the ball is within reach and legal to strike. Click, tap, or glide into it to return.</p>
             </div>
             <div className="hit-guide-item">
-              <div className="hit-visual-tag tag-red">🔴 WAIT FOR BOUNCE!</div>
-              <p>Appears if volleying would cause an illegal fault (inside the Kitchen or during the Two-Bounce rule). Let it bounce first!</p>
+              <div className="hit-visual-tag tag-red">BOUNCE REQUIRED</div>
+              <p>Appears if volleying would trigger a fault (inside the Kitchen or during the Two-Bounce rule). Wait for bounce.</p>
             </div>
             <div className="hit-guide-item">
-              <div className="hit-visual-tag tag-blue">◎ TIMING RING</div>
-              <p>Crosshair on the court floor shows exact landing spot. The outer ring shrinks inward as the ball descends so you never miss.</p>
+              <div className="hit-visual-tag tag-blue">LANDING RETICLE</div>
+              <p>Crosshair on the court floor displays arrival position, with timing ring closing inward as the ball descends.</p>
             </div>
           </div>
         </div>
@@ -99,7 +96,6 @@ export const Controls: React.FC<ControlsProps> = ({ onClose }) => {
         {/* Official Pickleball Rules Card */}
         <div className="pickleball-rules-card">
           <div className="rules-header">
-            <AlertTriangle size={18} className="rules-icon" />
             <span>AUTHENTIC PICKLEBALL RULES</span>
           </div>
 

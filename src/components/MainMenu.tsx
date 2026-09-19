@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import type { ScoringMode, DifficultyLevel } from '../types/game';
-import { Play, HelpCircle, Check, MousePointer, Download, Maximize2 } from 'lucide-react';
+import { Play, HelpCircle, Check, Download, Maximize2 } from 'lucide-react';
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -72,58 +72,47 @@ export const MainMenu: React.FC<MainMenuProps> = ({
   return (
     <div className="menu-overlay">
       <div className="menu-modal">
-        {/* Pickleball Logo Badge */}
-        <div className="menu-badge">
-          <div className="ball-icon">
-            <span className="dot d1"></span>
-            <span className="dot d2"></span>
-            <span className="dot d3"></span>
-            <span className="dot d4"></span>
-          </div>
-          <span className="badge-text">VISUAL HIT-ASSIST & LANDING RETICLE ACTIVE</span>
-        </div>
-
         <h1 className="menu-title">
           PICKLE<span className="title-highlight">BALL</span>
         </h1>
         <p className="menu-subtitle">
-          Glide your mouse or touch screen to move your paddle. Follow the court floor landing reticle and paddle sweet-spot halo to hit cleanly!
+          Full-court tournament simulator with official non-volley kitchen rules, side-out scoring, and reactive AI physics.
         </p>
 
         {/* Difficulty Level Selection Tabs */}
         <div className="difficulty-mode-selector">
           <div className="selector-label-row">
-            <span className="selector-label">Difficulty Level:</span>
+            <span className="selector-label">Difficulty:</span>
             <span className="difficulty-hint">
-              {difficulty === 'easy' && '⚡ 0.8x ball speed, forgiving hit reach & gentle AI'}
-              {difficulty === 'medium' && '⚡ 1.0x regulation speed & balanced AI'}
-              {difficulty === 'hard' && '⚡ 1.2x tournament speed & aggressive AI'}
+              {difficulty === 'easy' && '0.8x ball speed • Generous reach • Casual AI'}
+              {difficulty === 'medium' && '1.0x regulation speed • Standard reach • Competitive AI'}
+              {difficulty === 'hard' && '1.2x tournament speed • Tight reach • Pro AI'}
             </span>
           </div>
           <div className="difficulty-toggle-group">
             <button
-              className={`diff-btn diff-easy ${difficulty === 'easy' ? 'active' : ''}`}
+              className={`diff-btn ${difficulty === 'easy' ? 'active' : ''}`}
               onClick={() => onSetDifficulty('easy')}
               type="button"
             >
               <span className="diff-name">EASY</span>
-              <span className="diff-sub">Soft & Forgiving</span>
+              <span className="diff-sub">Casual Rally</span>
             </button>
             <button
-              className={`diff-btn diff-medium ${difficulty === 'medium' ? 'active' : ''}`}
+              className={`diff-btn ${difficulty === 'medium' ? 'active' : ''}`}
               onClick={() => onSetDifficulty('medium')}
               type="button"
             >
               <span className="diff-name">MEDIUM</span>
-              <span className="diff-sub">Regulation</span>
+              <span className="diff-sub">Standard</span>
             </button>
             <button
-              className={`diff-btn diff-hard ${difficulty === 'hard' ? 'active' : ''}`}
+              className={`diff-btn ${difficulty === 'hard' ? 'active' : ''}`}
               onClick={() => onSetDifficulty('hard')}
               type="button"
             >
               <span className="diff-name">HARD</span>
-              <span className="diff-sub">Fast & Fierce</span>
+              <span className="diff-sub">Tournament</span>
             </button>
           </div>
         </div>
@@ -186,10 +175,7 @@ export const MainMenu: React.FC<MainMenuProps> = ({
         {/* Quick Controls Preview Footer */}
         <div className="quick-controls-footer">
           <div className="footer-p1">
-            <span className="footer-label p1-text">
-              <MousePointer size={11} style={{ display: 'inline', marginRight: 3 }} />
-              PLAYER 1
-            </span>
+            <span className="footer-label p1-text">PLAYER 1</span>
             <code>MOUSE / TOUCH</code> + <code>CLICK</code>
           </div>
           <div className="footer-divider"></div>

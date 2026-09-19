@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import type { GameScore, GameState, ScoringMode, DifficultyLevel } from '../types/game';
 import { sound } from '../game/Audio';
-import { Volume2, VolumeX, Pause, Play, ShieldAlert, Sparkles, Maximize2, Timer } from 'lucide-react';
+import { Volume2, VolumeX, Pause, Play, Maximize2 } from 'lucide-react';
 
 interface ScoreboardProps {
   score: GameScore;
@@ -49,7 +49,6 @@ export const Scoreboard: React.FC<ScoreboardProps> = ({
         {/* Player 1 Info Card */}
         <div className={`player-card p1 ${score.server === 'player1' ? 'serving' : ''}`}>
           <div className="player-indicator">
-            <span className="p-dot p1-dot"></span>
             <div className="player-meta">
               <span className="player-title">PLAYER 1</span>
               {score.server === 'player1' && (
@@ -79,7 +78,7 @@ export const Scoreboard: React.FC<ScoreboardProps> = ({
             )}
             {onSetDifficulty && (
               <button
-                className={`difficulty-chip diff-${score.difficulty || 'medium'}`}
+                className="difficulty-chip"
                 onClick={() => {
                   const current = score.difficulty || 'medium';
                   const next: DifficultyLevel =
@@ -110,7 +109,6 @@ export const Scoreboard: React.FC<ScoreboardProps> = ({
                 </span>
               )}
             </div>
-            <span className="p-dot p2-dot"></span>
           </div>
         </div>
 
@@ -147,7 +145,6 @@ export const Scoreboard: React.FC<ScoreboardProps> = ({
       {score.serveCountdown !== null && gameState === 'playing' && (
         <div className="serve-countdown-banner">
           <div className="countdown-hud-badge">
-            <Timer size={18} className="timer-icon pulse-fast" />
             <span className="countdown-hud-text">
               SERVE IN <strong className="countdown-digit">{score.serveCountdown}</strong>s
             </span>
@@ -162,14 +159,12 @@ export const Scoreboard: React.FC<ScoreboardProps> = ({
           <div className={`point-badge ${score.isSideOut ? 'side-out-badge' : ''}`}>
             {score.isSideOut ? (
               <div className="point-headline side-out-text">
-                <ShieldAlert size={20} />
-                <span>SIDE OUT! SERVE TRANSFERRED</span>
+                <span>SIDE OUT &bull; SERVE TRANSFERRED</span>
               </div>
             ) : (
               <div className="point-headline">
-                <Sparkles size={18} className="sparkle-icon" />
                 <span className={score.pointWinner === 'player1' ? 'p1-text' : 'p2-text'}>
-                  {score.pointWinner === 'player1' ? 'PLAYER 1' : 'PLAYER 2'} SCORES!
+                  {score.pointWinner === 'player1' ? 'PLAYER 1' : 'PLAYER 2'} POINT
                 </span>
               </div>
             )}

@@ -28,7 +28,7 @@ export const PauseMenu: React.FC<PauseMenuProps> = ({
             <span className="selector-label">Difficulty:</span>
             <div className="difficulty-toggle-group">
               <button
-                className={`diff-btn diff-easy ${difficulty === 'easy' ? 'active' : ''}`}
+                className={`diff-btn ${difficulty === 'easy' ? 'active' : ''}`}
                 onClick={() => onSetDifficulty('easy')}
                 type="button"
               >
@@ -36,7 +36,7 @@ export const PauseMenu: React.FC<PauseMenuProps> = ({
                 <span className="diff-sub">0.8x Speed</span>
               </button>
               <button
-                className={`diff-btn diff-medium ${difficulty === 'medium' ? 'active' : ''}`}
+                className={`diff-btn ${difficulty === 'medium' ? 'active' : ''}`}
                 onClick={() => onSetDifficulty('medium')}
                 type="button"
               >
@@ -44,7 +44,7 @@ export const PauseMenu: React.FC<PauseMenuProps> = ({
                 <span className="diff-sub">1.0x Speed</span>
               </button>
               <button
-                className={`diff-btn diff-hard ${difficulty === 'hard' ? 'active' : ''}`}
+                className={`diff-btn ${difficulty === 'hard' ? 'active' : ''}`}
                 onClick={() => onSetDifficulty('hard')}
                 type="button"
               >

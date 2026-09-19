@@ -485,14 +485,13 @@ export class BallEntity implements Ball {
 
     ctx.save();
 
-    // Color cue: Cyan if on Player 1 side, Coral if on Player 2 side
-    const isP1Side = x < 640;
-    const color = isP1Side ? '#38bdf8' : '#fb923c';
+    // Clean, authentic Hawkeye-style court landing mark
+    const color = 'rgba(255, 255, 255, 0.7)';
 
     // 1. Center Target Crosshair
     ctx.strokeStyle = color;
-    ctx.lineWidth = 1.8;
-    const crossSize = 7;
+    ctx.lineWidth = 1.5;
+    const crossSize = 6;
     ctx.beginPath();
     ctx.moveTo(x - crossSize, y);
     ctx.lineTo(x + crossSize, y);
@@ -503,23 +502,22 @@ export class BallEntity implements Ball {
     // Center dot
     ctx.fillStyle = color;
     ctx.beginPath();
-    ctx.arc(x, y, 2.5, 0, Math.PI * 2);
+    ctx.arc(x, y, 2, 0, Math.PI * 2);
     ctx.fill();
 
     // 2. Inward-shrinking arrival timing ring
-    // Starts at 26px radius and closes to 6px as framesRemaining approaches 0
-    const timingRadius = Math.max(7, Math.min(32, 6 + framesRemaining * 0.75));
-    ctx.strokeStyle = `rgba(${isP1Side ? '56, 189, 248' : '251, 146, 60'}, 0.75)`;
-    ctx.lineWidth = 1.5;
+    const timingRadius = Math.max(6, Math.min(28, 5 + framesRemaining * 0.7));
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.55)';
+    ctx.lineWidth = 1.2;
     ctx.setLineDash([3, 2]);
     ctx.beginPath();
     ctx.ellipse(x, y, timingRadius, timingRadius * 0.65, 0, 0, Math.PI * 2);
     ctx.stroke();
 
-    // 3. Subtle outer bounce pulse halo
-    ctx.fillStyle = `rgba(${isP1Side ? '56, 189, 248' : '251, 146, 60'}, 0.12)`;
+    // 3. Subtle floor landing halo
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.08)';
     ctx.beginPath();
-    ctx.ellipse(x, y, 14, 9, 0, 0, Math.PI * 2);
+    ctx.ellipse(x, y, 12, 8, 0, 0, Math.PI * 2);
     ctx.fill();
 
     ctx.restore();

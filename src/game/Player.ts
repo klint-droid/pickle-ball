@@ -431,41 +431,27 @@ export class PlayerCharacter implements Player {
     ctx.save();
 
     if (status === 'ready') {
-      // 🟢 Ready to hit: Vibrant neon green pulse with HIT prompt
-      ctx.strokeStyle = '#4ade80';
-      ctx.lineWidth = 2.5;
-      ctx.shadowColor = '#22c55e';
-      ctx.shadowBlur = 16;
-      ctx.beginPath();
-      ctx.arc(paddlePos.x, paddlePos.y, reachRadius, 0, Math.PI * 2);
-      ctx.stroke();
-
-      ctx.fillStyle = 'rgba(74, 222, 128, 0.15)';
-      ctx.fill();
-
-      // "HIT!" badge above paddle
-      ctx.shadowBlur = 0;
-      ctx.font = '800 12px Outfit, system-ui, sans-serif';
-      ctx.fillStyle = '#4ade80';
-      ctx.textAlign = 'center';
-      ctx.fillText('HIT NOW!', paddlePos.x, paddlePos.y - reachRadius - 8);
-    } else if (status === 'warn-bounce') {
-      // 🔴 Illegal volley warning (Kitchen or Two-Bounce): Red warning
-      ctx.strokeStyle = '#ef4444';
+      // Subtle sweet-spot indicator ring
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.75)';
       ctx.lineWidth = 2;
-      ctx.setLineDash([4, 3]);
       ctx.beginPath();
       ctx.arc(paddlePos.x, paddlePos.y, reachRadius, 0, Math.PI * 2);
       ctx.stroke();
 
-      ctx.font = '800 11px Outfit, system-ui, sans-serif';
-      ctx.fillStyle = '#ef4444';
-      ctx.textAlign = 'center';
-      ctx.fillText('WAIT FOR BOUNCE!', paddlePos.x, paddlePos.y - reachRadius - 8);
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.08)';
+      ctx.fill();
+    } else if (status === 'warn-bounce') {
+      // Dashed amber warning ring (Kitchen or Two-Bounce fault zone)
+      ctx.strokeStyle = 'rgba(245, 158, 11, 0.7)';
+      ctx.lineWidth = 1.8;
+      ctx.setLineDash([4, 4]);
+      ctx.beginPath();
+      ctx.arc(paddlePos.x, paddlePos.y, reachRadius, 0, Math.PI * 2);
+      ctx.stroke();
     } else if (status === 'approaching') {
-      // 🟡 Ball approaching: Gentle cyan range guide
-      ctx.strokeStyle = 'rgba(56, 189, 248, 0.55)';
-      ctx.lineWidth = 1.5;
+      // Faint guide ring
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+      ctx.lineWidth = 1.2;
       ctx.setLineDash([2, 3]);
       ctx.beginPath();
       ctx.arc(paddlePos.x, paddlePos.y, reachRadius, 0, Math.PI * 2);
