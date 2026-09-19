@@ -36,6 +36,7 @@ export class GameEngine {
   private onStateChange: ((state: GameState, score: GameScore) => void) | null = null;
   private hitReach: number = 50;
   private p1HitStatus: 'ready' | 'approaching' | 'warn-bounce' | 'idle' = 'idle';
+  private isP2AI: boolean = true;
 
   constructor(canvasWidth: number = 1280, canvasHeight: number = 720) {
     this.court = new Court(canvasWidth, canvasHeight);
@@ -272,9 +273,11 @@ export class GameEngine {
     // 2. Update Player 2: Human Keyboard or Smart Pickleball AI
     const isP2Human = p2Input.left || p2Input.right || p2Input.up || p2Input.down || p2Input.justHit;
     if (isP2Human) {
+      this.isP2AI = false;
       this.player2.updateWithKeyboard(p2Input, this.ball.x, this.ball.y);
       this.checkPlayerHit('player2', this.player2, p2Input.justHit);
     } else {
+      this.isP2AI = true;
       const aiSwung = this.player2.updateAI(
         this.ball.x,
         this.ball.y,
@@ -335,6 +338,7 @@ export class GameEngine {
       }
 
       const isSmash = this.ball.z > 30;
+      const isAIHitter = id === 'player2' && this.isP2AI;
       this.ball.hit(
         id,
         player.velocityX,
@@ -342,7 +346,9 @@ export class GameEngine {
         isSmash,
         this.particles,
         this.court.dims,
-        this.getSpeedMultiplier()
+        this.getSpeedMultiplier(),
+        this.score.difficulty,
+        isAIHitter
       );
 
       this.score.rally++;

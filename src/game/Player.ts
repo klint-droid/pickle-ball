@@ -24,6 +24,12 @@ export class PlayerCharacter implements Player {
   private minY: number = 0;
   private maxY: number = 0;
 
+  // AI Human Imperfection & Reaction State
+  private aiReactionDelayFrames: number = 0;
+  private aiTargetOffsetY: number = 0;
+  private aiWillCommitRuleFault: boolean = false;
+  private aiLastBallVx: number = 0;
+
   constructor(id: PlayerId, court: CourtDimensions) {
     this.id = id;
 
@@ -60,6 +66,11 @@ export class PlayerCharacter implements Player {
     this.velocityX = 0;
     this.isHitting = false;
     this.hitTimer = 0;
+
+    this.aiReactionDelayFrames = 0;
+    this.aiTargetOffsetY = 0;
+    this.aiWillCommitRuleFault = false;
+    this.aiLastBallVx = 0;
 
     const centerY = court.centerlineY;
     const targetY = serverCourt === 'even' ? centerY + 100 : centerY - 100;
@@ -158,31 +169,82 @@ export class PlayerCharacter implements Player {
     let targetY = this.y;
 
     const isBallApproaching = ballVx > 0;
-    const centerY = court.centerlineY;
+    const justHitTowardsAI = isBallApproaching && this.aiLastBallVx <= 0;
+    this.aiLastBallVx = ballVx;
 
     // Difficulty-tuned AI speed and reach
     const aiSpeed = difficulty === 'easy' ? 3.8 : difficulty === 'medium' ? 4.9 : 6.2;
     const aiReach = difficulty === 'easy' ? 42 : difficulty === 'medium' ? 46 : 52;
+    const centerY = court.centerlineY;
+
+    if (justHitTowardsAI) {
+      // Roll AI decision & mistakes for this incoming shot
+      const rallyPressure = Math.min(0.12, shotCount * 0.015);
+
+      if (difficulty === 'easy') {
+        // Natural human reaction latency (3-6 frames)
+        this.aiReactionDelayFrames = 3 + Math.floor(Math.random() * 4);
+
+        // 22% chance of misjudging Y arrival position
+        if (Math.random() < 0.22 + rallyPressure) {
+          const dir = Math.random() > 0.5 ? 1 : -1;
+          this.aiTargetOffsetY = dir * (26 + Math.random() * 26);
+        } else {
+          this.aiTargetOffsetY = (Math.random() - 0.5) * 10;
+        }
+
+        // 5% chance to slip up on a rule (kitchen or two-bounce fault)
+        this.aiWillCommitRuleFault = Math.random() < 0.05;
+      } else if (difficulty === 'medium') {
+        // Subtle human reaction latency (1-3 frames)
+        this.aiReactionDelayFrames = 1 + Math.floor(Math.random() * 3);
+
+        // 9% chance of misjudging arrival position under pressure
+        if (Math.random() < 0.09 + rallyPressure * 0.6) {
+          const dir = Math.random() > 0.5 ? 1 : -1;
+          this.aiTargetOffsetY = dir * (16 + Math.random() * 16);
+        } else {
+          this.aiTargetOffsetY = (Math.random() - 0.5) * 6;
+        }
+
+        // 1.5% chance to slip up on a rule
+        this.aiWillCommitRuleFault = Math.random() < 0.015;
+      } else {
+        // Hard difficulty: sharp and focused
+        this.aiReactionDelayFrames = 0;
+        if (Math.random() < 0.025 + rallyPressure * 0.3) {
+          this.aiTargetOffsetY = (Math.random() - 0.5) * 14;
+        } else {
+          this.aiTargetOffsetY = 0;
+        }
+        this.aiWillCommitRuleFault = false;
+      }
+    }
 
     if (isBallApproaching) {
-      targetY = ballY;
-
-      // Occasional slight error on Easy
-      if (difficulty === 'easy' && Math.random() < 0.08) {
-        targetY += (Math.random() - 0.5) * 35;
-      }
-
-      const mustWaitForBounce = (shotCount === 0 || shotCount === 1) && !ballHasBounced;
-
-      if (mustWaitForBounce) {
-        targetX = court.courtRight - 60;
+      if (this.aiReactionDelayFrames > 0) {
+        this.aiReactionDelayFrames--;
+        targetX = this.x;
+        targetY = this.y;
       } else {
-        const ballBouncedInKitchen = ballHasBounced && ballX >= court.kitchenRight;
-        if (!ballBouncedInKitchen) {
-          const safeLine = court.kitchenRight + 24;
-          targetX = Math.max(safeLine, Math.min(court.courtRight - 30, ballX));
-        } else {
+        targetY = ballY + this.aiTargetOffsetY;
+        targetY = Math.max(court.courtTop + 15, Math.min(court.courtBottom - 15, targetY));
+
+        const mustWaitForBounce = (shotCount === 0 || shotCount === 1) && !ballHasBounced;
+
+        if (mustWaitForBounce && !this.aiWillCommitRuleFault) {
+          targetX = court.courtRight - 60;
+        } else if (mustWaitForBounce && this.aiWillCommitRuleFault) {
+          // Mistake: AI gets too eager and rushes to volley serve
           targetX = ballX;
+        } else {
+          const ballBouncedInKitchen = ballHasBounced && ballX >= court.kitchenRight;
+          if (!ballBouncedInKitchen && !this.aiWillCommitRuleFault) {
+            const safeLine = court.kitchenRight + 24;
+            targetX = Math.max(safeLine, Math.min(court.courtRight - 30, ballX));
+          } else {
+            targetX = ballX;
+          }
         }
       }
 
@@ -190,7 +252,11 @@ export class PlayerCharacter implements Player {
       const dist = Math.hypot(ballX - paddlePos.x, ballY - paddlePos.y);
 
       if (dist < aiReach && ballZ < 72) {
-        if (!mustWaitForBounce) {
+        const mustWaitForBounce = (shotCount === 0 || shotCount === 1) && !ballHasBounced;
+        if (this.aiWillCommitRuleFault) {
+          // AI swings prematurely, committing authentic fault
+          shouldHit = true;
+        } else if (!mustWaitForBounce) {
           if (!this.isInKitchen(court) || ballHasBounced) {
             shouldHit = true;
           }
@@ -201,6 +267,7 @@ export class PlayerCharacter implements Player {
     } else {
       targetX = court.courtRight - 80;
       targetY = centerY;
+      this.aiReactionDelayFrames = 0;
     }
 
     const dx = targetX - this.x;

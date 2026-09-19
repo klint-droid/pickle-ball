@@ -1,4 +1,4 @@
-import type { Ball, BallTrailPoint, PlayerId, CourtDimensions, CourtSide, BallLandingPrediction } from '../types/game';
+import type { Ball, BallTrailPoint, PlayerId, CourtDimensions, CourtSide, BallLandingPrediction, DifficultyLevel } from '../types/game';
 import { sound } from './Audio';
 import { ParticleSystem } from './Particles';
 
@@ -302,7 +302,9 @@ export class BallEntity implements Ball {
     isSmash: boolean,
     particles: ParticleSystem,
     court: CourtDimensions,
-    speedMultiplier: number = 1.0
+    speedMultiplier: number = 1.0,
+    difficulty: DifficultyLevel = 'medium',
+    isAI: boolean = false
   ) {
     this.lastHitBy = player;
     this.bounceCountOnSide = 0;
@@ -312,19 +314,73 @@ export class BallEntity implements Ball {
 
     const dirX = player === 'player1' ? 1 : -1;
 
-    // Crosscourt / down-the-line speed scaled with difficulty
-    const baseSpeedX = (isSmash ? 11.5 : 8.8) * speedMultiplier;
-    const addedVx = playerVx * 0.35;
-    this.vx = (dirX * baseSpeedX) + addedVx;
+    // Check for AI unforced hitting mistakes
+    let aiMistake: 'none' | 'net' | 'long' | 'wide' = 'none';
 
-    const targetCenterY = court.centerlineY;
-    const aimOffset = (targetCenterY - this.y) * 0.02 + playerVy * 0.4;
-    this.vy = aimOffset * speedMultiplier;
+    if (isAI) {
+      const rallyPressure = Math.min(0.12, this.shotCountInRally * 0.015);
+      let errorChance = 0;
 
-    if (isSmash) {
-      this.vz = 2.5;
+      if (difficulty === 'easy') {
+        errorChance = 0.16 + rallyPressure;
+      } else if (difficulty === 'medium') {
+        errorChance = 0.07 + rallyPressure * 0.6;
+      } else {
+        errorChance = 0.02 + rallyPressure * 0.3;
+      }
+
+      if (isSmash) {
+        errorChance += 0.04;
+      }
+
+      if (Math.random() < errorChance) {
+        const roll = Math.random();
+        if (roll < 0.40) {
+          aiMistake = 'net'; // Hits into the net mesh!
+        } else if (roll < 0.72) {
+          aiMistake = 'long'; // Overhits deep past baseline!
+        } else {
+          aiMistake = 'wide'; // Slices wide past sideline!
+        }
+      }
+    }
+
+    if (aiMistake === 'net') {
+      // Hit low into net
+      this.vx = -8.6 * speedMultiplier;
+      this.vy = (court.centerlineY - this.y) * 0.015;
+      this.vz = 5.4; // Arrives at net with altitude below 36px net height
+    } else if (aiMistake === 'long') {
+      // Overhit drive that sails past baseline
+      this.vx = -12.4 * speedMultiplier;
+      this.vy = (court.centerlineY - this.y) * 0.01;
+      this.vz = 8.6;
+    } else if (aiMistake === 'wide') {
+      // Sliced wide past sideline
+      const side = Math.random() > 0.5 ? 1 : -1;
+      this.vx = -8.2 * speedMultiplier;
+      this.vy = side * 5.2 * speedMultiplier;
+      this.vz = 6.4;
     } else {
-      this.vz = 6.8;
+      const baseSpeedX = (isSmash ? 11.5 : 8.8) * speedMultiplier;
+      const addedVx = playerVx * 0.35;
+      this.vx = (dirX * baseSpeedX) + addedVx;
+
+      if (isAI) {
+        // Natural crosscourt / down-the-line aiming with safe margins
+        const targetY = court.centerlineY + (Math.random() - 0.5) * (court.courtHeight * 0.50);
+        this.vy = (targetY - this.y) * 0.022 * speedMultiplier;
+      } else {
+        const targetCenterY = court.centerlineY;
+        const aimOffset = (targetCenterY - this.y) * 0.02 + playerVy * 0.4;
+        this.vy = aimOffset * speedMultiplier;
+      }
+
+      if (isSmash) {
+        this.vz = 2.5;
+      } else {
+        this.vz = 6.8;
+      }
     }
 
     sound.playHit(isSmash ? 1.4 : 1.0);
