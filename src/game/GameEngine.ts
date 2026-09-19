@@ -54,18 +54,17 @@ export class GameEngine {
   public setDifficulty(diff: DifficultyLevel) {
     this.score.difficulty = diff;
     if (diff === 'easy') {
-      this.hitReach = 62;
+      this.hitReach = 56;
     } else if (diff === 'medium') {
       this.hitReach = 50;
     } else {
-      this.hitReach = 42;
+      this.hitReach = 45;
     }
     this.notify();
   }
 
   public getSpeedMultiplier(): number {
-    if (this.score.difficulty === 'easy') return 0.82;
-    if (this.score.difficulty === 'hard') return 1.22;
+    // Ball speed and physics are normal regulation across all levels
     return 1.0;
   }
 
@@ -265,8 +264,9 @@ export class GameEngine {
       this.p1HitStatus = 'idle';
     }
 
-    // Auto-hit if mouse paddle collides directly with ball, or on click/space
-    const isP1HoverContact = p1Dist <= 32 && this.ball.z < 65 && this.ball.currentSide === 'left';
+    // Auto-hit if mouse paddle collides directly with ball, but ONLY if legal!
+    // Never auto-volley when an illegal volley fault would occur (wait for the ball to bounce first).
+    const isP1HoverContact = !isIllegalVolley && p1Dist <= 32 && this.ball.z < 65 && this.ball.currentSide === 'left';
     const p1ShouldHit = p1Input.justHit || isP1HoverContact;
     this.checkPlayerHit('player1', this.player1, p1ShouldHit);
 

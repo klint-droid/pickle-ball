@@ -33,7 +33,7 @@ export const PauseMenu: React.FC<PauseMenuProps> = ({
                 type="button"
               >
                 <span className="diff-name">EASY</span>
-                <span className="diff-sub">0.8x Speed</span>
+                <span className="diff-sub">High AI Errors</span>
               </button>
               <button
                 className={`diff-btn ${difficulty === 'medium' ? 'active' : ''}`}
@@ -41,7 +41,7 @@ export const PauseMenu: React.FC<PauseMenuProps> = ({
                 type="button"
               >
                 <span className="diff-name">MEDIUM</span>
-                <span className="diff-sub">1.0x Speed</span>
+                <span className="diff-sub">Club Match</span>
               </button>
               <button
                 className={`diff-btn ${difficulty === 'hard' ? 'active' : ''}`}
@@ -49,7 +49,7 @@ export const PauseMenu: React.FC<PauseMenuProps> = ({
                 type="button"
               >
                 <span className="diff-name">HARD</span>
-                <span className="diff-sub">1.2x Speed</span>
+                <span className="diff-sub">Tournament</span>
               </button>
             </div>
           </div>

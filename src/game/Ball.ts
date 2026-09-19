@@ -30,7 +30,7 @@ export class BallEntity implements Ball {
     this.resetToServe('player1', 'even', court);
   }
 
-  public resetToServe(server: PlayerId, serverCourt: CourtSide, court: CourtDimensions, speedMultiplier: number = 1.0) {
+  public resetToServe(server: PlayerId, serverCourt: CourtSide, court: CourtDimensions, _speedMultiplier: number = 1.0) {
     this.isActive = true;
     this.bounceCountOnSide = 0;
     this.hasBouncedSinceHit = false;
@@ -63,12 +63,13 @@ export class BallEntity implements Ball {
         };
       }
 
-      const targetX = (this.targetServiceBox.minX + this.targetServiceBox.maxX) / 2;
+      // Target deep into the opponent's service box (approx 58% of the way to baseline)
+      const targetX = court.kitchenRight + (court.courtRight - court.kitchenRight) * 0.58;
       const targetY = (this.targetServiceBox.minY + this.targetServiceBox.maxY) / 2;
-      const flightFrames = Math.round(48 / speedMultiplier);
+      const frictionScale = 47.2;
 
-      this.vx = (targetX - this.x) / flightFrames;
-      this.vy = (targetY - this.y) / flightFrames;
+      this.vx = (targetX - this.x) / frictionScale;
+      this.vy = (targetY - this.y) / frictionScale;
       this.vz = 7.8;
     } else {
       this.currentSide = 'right';
@@ -91,12 +92,13 @@ export class BallEntity implements Ball {
         };
       }
 
-      const targetX = (this.targetServiceBox.minX + this.targetServiceBox.maxX) / 2;
+      // Target deep into Player 1's service box (approx 58% towards baseline from kitchen line)
+      const targetX = court.courtLeft + (court.kitchenLeft - court.courtLeft) * 0.42;
       const targetY = (this.targetServiceBox.minY + this.targetServiceBox.maxY) / 2;
-      const flightFrames = Math.round(48 / speedMultiplier);
+      const frictionScale = 47.2;
 
-      this.vx = (targetX - this.x) / flightFrames;
-      this.vy = (targetY - this.y) / flightFrames;
+      this.vx = (targetX - this.x) / frictionScale;
+      this.vy = (targetY - this.y) / frictionScale;
       this.vz = 7.8;
     }
 
@@ -123,8 +125,18 @@ export class BallEntity implements Ball {
       return;
     }
 
-    const landingX = this.x + this.vx * t;
-    const landingY = this.y + this.vy * t;
+    let landingX = this.x;
+    let landingY = this.y;
+    let currVx = this.vx;
+    let currVy = this.vy;
+
+    const steps = Math.min(80, Math.round(t));
+    for (let i = 0; i < steps; i++) {
+      currVx *= this.airFriction;
+      currVy *= this.airFriction;
+      landingX += currVx;
+      landingY += currVy;
+    }
 
     this.predictedLanding = {
       x: landingX,
@@ -302,7 +314,7 @@ export class BallEntity implements Ball {
     isSmash: boolean,
     particles: ParticleSystem,
     court: CourtDimensions,
-    speedMultiplier: number = 1.0,
+    _speedMultiplier: number = 1.0,
     difficulty: DifficultyLevel = 'medium',
     isAI: boolean = false
   ) {
@@ -322,20 +334,23 @@ export class BallEntity implements Ball {
       let errorChance = 0;
 
       if (difficulty === 'easy') {
-        errorChance = 0.16 + rallyPressure;
+        // Big probability of AI mistake on Easy mode!
+        errorChance = 0.45 + rallyPressure;
       } else if (difficulty === 'medium') {
-        errorChance = 0.07 + rallyPressure * 0.6;
+        // Balanced club-level AI mistake probability
+        errorChance = 0.18 + rallyPressure * 0.6;
       } else {
-        errorChance = 0.02 + rallyPressure * 0.3;
+        // Tournament-level AI with small mistake probability
+        errorChance = 0.05 + rallyPressure * 0.3;
       }
 
       if (isSmash) {
-        errorChance += 0.04;
+        errorChance += 0.05;
       }
 
       if (Math.random() < errorChance) {
         const roll = Math.random();
-        if (roll < 0.40) {
+        if (roll < 0.38) {
           aiMistake = 'net'; // Hits into the net mesh!
         } else if (roll < 0.72) {
           aiMistake = 'long'; // Overhits deep past baseline!
@@ -346,40 +361,41 @@ export class BallEntity implements Ball {
     }
 
     if (aiMistake === 'net') {
-      // Hit low into net
-      this.vx = -8.6 * speedMultiplier;
-      this.vy = (court.centerlineY - this.y) * 0.015;
-      this.vz = 5.4; // Arrives at net with altitude below 36px net height
+      // Mistake: Low trajectory directly into net tape
+      this.vx = -10.5;
+      this.vy = (court.centerlineY - this.y) * 0.012;
+      this.vz = 4.8;
     } else if (aiMistake === 'long') {
-      // Overhit drive that sails past baseline
-      this.vx = -12.4 * speedMultiplier;
-      this.vy = (court.centerlineY - this.y) * 0.01;
+      // Mistake: Overhit drive sailing past baseline
+      this.vx = -17.5;
+      this.vy = (court.centerlineY - this.y) * 0.008;
       this.vz = 8.6;
     } else if (aiMistake === 'wide') {
-      // Sliced wide past sideline
+      // Mistake: Sliced wide past sideline
       const side = Math.random() > 0.5 ? 1 : -1;
-      this.vx = -8.2 * speedMultiplier;
-      this.vy = side * 5.2 * speedMultiplier;
-      this.vz = 6.4;
+      this.vx = -12.5;
+      this.vy = side * 6.2;
+      this.vz = 7.0;
     } else {
-      const baseSpeedX = (isSmash ? 11.5 : 8.8) * speedMultiplier;
-      const addedVx = playerVx * 0.35;
+      // Normal regulation pickleball drive/groundstroke
+      const baseSpeedX = isSmash ? 16.5 : 13.2;
+      const addedVx = playerVx * 0.25;
       this.vx = (dirX * baseSpeedX) + addedVx;
 
       if (isAI) {
-        // Natural crosscourt / down-the-line aiming with safe margins
-        const targetY = court.centerlineY + (Math.random() - 0.5) * (court.courtHeight * 0.50);
-        this.vy = (targetY - this.y) * 0.022 * speedMultiplier;
+        // Safe crosscourt / down-the-line aiming within court bounds
+        const targetY = court.centerlineY + (Math.random() - 0.5) * (court.courtHeight * 0.45);
+        this.vy = (targetY - this.y) * 0.022;
       } else {
         const targetCenterY = court.centerlineY;
-        const aimOffset = (targetCenterY - this.y) * 0.02 + playerVy * 0.4;
-        this.vy = aimOffset * speedMultiplier;
+        const aimOffset = (targetCenterY - this.y) * 0.02 + playerVy * 0.35;
+        this.vy = aimOffset;
       }
 
       if (isSmash) {
-        this.vz = 2.5;
+        this.vz = 3.2;
       } else {
-        this.vz = 6.8;
+        this.vz = 7.4;
       }
     }
 

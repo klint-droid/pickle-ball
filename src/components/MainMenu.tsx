@@ -84,9 +84,9 @@ export const MainMenu: React.FC<MainMenuProps> = ({
           <div className="selector-label-row">
             <span className="selector-label">Difficulty:</span>
             <span className="difficulty-hint">
-              {difficulty === 'easy' && '0.8x ball speed • Generous reach • Casual AI'}
-              {difficulty === 'medium' && '1.0x regulation speed • Standard reach • Competitive AI'}
-              {difficulty === 'hard' && '1.2x tournament speed • Tight reach • Pro AI'}
+              {difficulty === 'easy' && 'High AI error rate • Forgiving rallies • Beginner friendly'}
+              {difficulty === 'medium' && 'Balanced AI • Moderate unforced errors • Club level'}
+              {difficulty === 'hard' && 'Low AI error rate • Tournament precision • Competitive match'}
             </span>
           </div>
           <div className="difficulty-toggle-group">
@@ -96,7 +96,7 @@ export const MainMenu: React.FC<MainMenuProps> = ({
               type="button"
             >
               <span className="diff-name">EASY</span>
-              <span className="diff-sub">Casual Rally</span>
+              <span className="diff-sub">High AI Errors</span>
             </button>
             <button
               className={`diff-btn ${difficulty === 'medium' ? 'active' : ''}`}
@@ -104,7 +104,7 @@ export const MainMenu: React.FC<MainMenuProps> = ({
               type="button"
             >
               <span className="diff-name">MEDIUM</span>
-              <span className="diff-sub">Standard</span>
+              <span className="diff-sub">Club Match</span>
             </button>
             <button
               className={`diff-btn ${difficulty === 'hard' ? 'active' : ''}`}
