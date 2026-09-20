@@ -14,6 +14,7 @@ interface MainMenuProps {
   onSetDifficulty: (mode: DifficultyLevel) => void;
   onStartGame: () => void;
   onOpenControls: () => void;
+  onOpenInstall?: () => void;
 }
 
 export const MainMenu: React.FC<MainMenuProps> = ({
@@ -22,7 +23,8 @@ export const MainMenu: React.FC<MainMenuProps> = ({
   difficulty,
   onSetDifficulty,
   onStartGame,
-  onOpenControls
+  onOpenControls,
+  onOpenInstall
 }) => {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [isInstalled, setIsInstalled] = useState<boolean>(false);
@@ -35,7 +37,10 @@ export const MainMenu: React.FC<MainMenuProps> = ({
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
 
-    if (window.matchMedia('(display-mode: standalone)').matches) {
+    if (
+      window.matchMedia('(display-mode: standalone)').matches ||
+      (window.navigator as unknown as { standalone?: boolean }).standalone === true
+    ) {
       setIsInstalled(true);
     }
 
@@ -45,12 +50,15 @@ export const MainMenu: React.FC<MainMenuProps> = ({
   }, []);
 
   const handleInstallClick = async () => {
-    if (!deferredPrompt) return;
-    deferredPrompt.prompt();
-    const { outcome } = await deferredPrompt.userChoice;
-    if (outcome === 'accepted') {
-      setIsInstalled(true);
-      setDeferredPrompt(null);
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      if (outcome === 'accepted') {
+        setIsInstalled(true);
+        setDeferredPrompt(null);
+      }
+    } else if (onOpenInstall) {
+      onOpenInstall();
     }
   };
 
@@ -164,9 +172,9 @@ export const MainMenu: React.FC<MainMenuProps> = ({
           </div>
 
           {/* Install PWA Prompt Button */}
-          {deferredPrompt && !isInstalled && (
+          {!isInstalled && (
             <button className="btn-pwa-install" onClick={handleInstallClick}>
-              <Download size={18} />
+              <Download size={16} />
               <span>INSTALL APP (PWA)</span>
             </button>
           )}

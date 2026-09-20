@@ -120,7 +120,7 @@ export const Scoreboard: React.FC<ScoreboardProps> = ({
             title="Toggle Fullscreen"
             aria-label="Toggle Fullscreen"
           >
-            <Maximize2 size={16} />
+            <Maximize2 size={13} />
           </button>
           <button
             className="hud-btn"
@@ -128,7 +128,7 @@ export const Scoreboard: React.FC<ScoreboardProps> = ({
             title={isMuted ? 'Unmute Sound' : 'Mute Sound'}
             aria-label="Toggle Sound"
           >
-            {isMuted ? <VolumeX size={17} /> : <Volume2 size={17} />}
+            {isMuted ? <VolumeX size={13} /> : <Volume2 size={13} />}
           </button>
           <button
             className="hud-btn"
@@ -136,7 +136,7 @@ export const Scoreboard: React.FC<ScoreboardProps> = ({
             title={gameState === 'paused' ? 'Resume (ESC)' : 'Pause (ESC)'}
             aria-label="Pause Game"
           >
-            {gameState === 'paused' ? <Play size={17} /> : <Pause size={17} />}
+            {gameState === 'paused' ? <Play size={13} /> : <Pause size={13} />}
           </button>
         </div>
       </div>

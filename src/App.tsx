@@ -8,6 +8,7 @@ import { Controls } from './components/Controls';
 import { GameOver } from './components/GameOver';
 import { PauseMenu } from './components/PauseMenu';
 import { LandscapeNotice } from './components/LandscapeNotice';
+import { InstallPromptModal } from './components/InstallPromptModal';
 
 export default function App() {
   const engine = useMemo(() => new GameEngine(1280, 720), []);
@@ -15,6 +16,7 @@ export default function App() {
   const [gameState, setGameState] = useState<GameState>('menu');
   const [score, setScore] = useState<GameScore>(engine.score);
   const [showControls, setShowControls] = useState<boolean>(false);
+  const [showInstallModal, setShowInstallModal] = useState<boolean>(false);
   const [scoringMode, setScoringMode] = useState<ScoringMode>('side-out');
   const [difficulty, setDifficulty] = useState<DifficultyLevel>('medium');
 
@@ -89,8 +91,15 @@ export default function App() {
             onSetDifficulty={handleSetDifficulty}
             onStartGame={handleStartGame}
             onOpenControls={() => setShowControls(true)}
+            onOpenInstall={() => setShowInstallModal(true)}
           />
         )}
+
+        {/* Global PWA Install Popup on Site Open / Manual Click */}
+        <InstallPromptModal
+          forceShow={showInstallModal}
+          onClose={() => setShowInstallModal(false)}
+        />
 
         {/* Pause Screen */}
         {gameState === 'paused' && (
