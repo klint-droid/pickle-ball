@@ -63,6 +63,10 @@ export class GameEngine {
     this.notify();
   }
 
+  public setPlayer1Paddle(color: string) {
+    this.player1.paddleColor = color;
+  }
+
   public getSpeedMultiplier(): number {
     // Ball speed and physics are normal regulation across all levels
     return 1.0;

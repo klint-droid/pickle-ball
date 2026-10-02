@@ -9,8 +9,10 @@ import { GameOver } from './components/GameOver';
 import { PauseMenu } from './components/PauseMenu';
 import { LandscapeNotice } from './components/LandscapeNotice';
 import { InstallPromptModal } from './components/InstallPromptModal';
+import { PlayerProvider, usePlayer } from './context/PlayerContext';
+import { PADDLES_CATALOG } from './services/playerStore';
 
-export default function App() {
+function GameView() {
   const engine = useMemo(() => new GameEngine(1280, 720), []);
 
   const [gameState, setGameState] = useState<GameState>('menu');
@@ -19,6 +21,18 @@ export default function App() {
   const [showInstallModal, setShowInstallModal] = useState<boolean>(false);
   const [scoringMode, setScoringMode] = useState<ScoringMode>('side-out');
   const [difficulty, setDifficulty] = useState<DifficultyLevel>('medium');
+
+  const { profile } = usePlayer();
+
+  // Sync equipped paddle color from user profile directly to GameEngine
+  useEffect(() => {
+    if (profile?.equippedPaddle) {
+      const paddleDef = PADDLES_CATALOG.find((p) => p.id === profile.equippedPaddle);
+      if (paddleDef) {
+        engine.setPlayer1Paddle(paddleDef.color);
+      }
+    }
+  }, [engine, profile?.equippedPaddle]);
 
   useEffect(() => {
     engine.setListener((state, newScore) => {
@@ -82,7 +96,7 @@ export default function App() {
           />
         )}
 
-        {/* Start / Main Menu */}
+        {/* Start / Main Menu Home Hub */}
         {gameState === 'menu' && (
           <MainMenu
             scoringMode={scoringMode}
@@ -112,7 +126,7 @@ export default function App() {
           />
         )}
 
-        {/* Game Over Screen */}
+        {/* Game Over Screen with Post-Match Rewards */}
         {gameState === 'gameOver' && (
           <GameOver
             score={score}
@@ -127,5 +141,13 @@ export default function App() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function App() {
+  return (
+    <PlayerProvider>
+      <GameView />
+    </PlayerProvider>
   );
 }
